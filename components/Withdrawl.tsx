@@ -137,7 +137,7 @@ export default function Withdrawal() {
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <Button variant="outline" className="w-full">🤩 I LOVE it!</Button>
                   <Button variant="outline" className="w-full">😁 I Like it!</Button>
-                  <Button variant="outline" className="w-full">😏 It's OK</Button>
+                  <Button variant="outline" className="w-full">😏 It&apos;s OK</Button>
                 </div>
                 <Textarea 
                   placeholder="Leave a comment..." 
@@ -203,7 +203,7 @@ export default function Withdrawal() {
         return (
           <div className="pt-20">
             <div className="mx-auto max-w-md text-center">
-              <h1 className="mt-2 text-xl font-bold mb-2">What's a Lightning Wallet?</h1>
+              <h1 className="mt-2 text-xl font-bold mb-2">What&apos;s a Lightning Wallet?</h1>
               <p className="relative">
                 A Lightning Wallet is a Bitcoin wallet that enables fast, low-cost transactions using the Lightning Network
                 <TooltipProvider>

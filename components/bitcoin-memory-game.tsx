@@ -160,7 +160,7 @@ export function BitcoinMemoryGame() {
         <Alert className="mb-4 bg-green-100 border-green-500">
           <AlertTitle className="text-green-800">Congratulations!</AlertTitle>
           <AlertDescription className="text-green-700">
-            You've completed the game in {moves} moves. Great job!
+            You&apos;ve completed the game in {moves} moves. Great job!
           </AlertDescription>
         </Alert>
       )}

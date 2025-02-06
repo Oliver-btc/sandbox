@@ -66,7 +66,7 @@ const Header: React.FC = () => {
   const Testimonial: React.FC<TestimonialProps> = ({ name, company, text }) => (
     <Card className="bg-gradient-to-b from-[#97969c]/20 to-[#000000] text-white p-6 rounded-lg shadow-lg m-4 w-full">
       <CardContent>
-        <p className="mb-4 italic">"{text}"</p>
+        <p className="mb-4 italic">&quot;{text}&quot;</p>
         <div className="flex items-center justify-between">
           <div>
             <p className="font-semibold">{name}</p>

@@ -73,9 +73,9 @@ export function QRLandingPage() {
             <div className="relative flex flex-col items-center justify-center w-full max-w-2xl px-4 space-y-8 pt-16">
               <div className="relative z-50 bg-white rounded-2xl p-6 shadow-lg max-w-md mb-4">
                 <div className="relative">
-                  <p className="text-black text-2xl font-bold mb-4">Hi, I'm Bitzy the Bull!</p>
+                  <p className="text-black text-2xl font-bold mb-4">Hi, I&apos;m Bitzy the Bull!</p>
 
-                  <p className="text-black text-xl">I'm here to help you around my Cyber Turf & show you how to claim your Bitcoin.</p>
+                  <p className="text-black text-xl">I&apos;m here to help you around my Cyber Turf & show you how to claim your Bitcoin.</p>
                   <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-white rotate-45" />
                 </div>
               </div>
@@ -92,7 +92,7 @@ export function QRLandingPage() {
                 onClick={handleDismissOverlay}
                 className="z-50 mt-8 text-white bg-[#F7931A] px-8 py-3 text-xl rounded-lg hover:bg-[#E8B749] transition-colors"
               >
-                Let's Go!
+                Let&apos;s Go!
               </button>
             </div>
           ) : (
