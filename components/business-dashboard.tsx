@@ -1,18 +1,24 @@
-"use client";
+'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { QrCode, Bitcoin, PieChart as PieChartIcon } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
 import { mockQRCodeLocations, cumulativeData, Location, CumulativeDataPoint } from './mockQRCodeLocations';
-import QRCodeScanMapComponent from './QRCodeScanMap';
 import HeaderComponent from './Header';
 import ProjectionChart from './ProjectionChart';
-import Header from './Header'; // Make sure the path is correct
+import Header from './Header';
 import CustomerInventoryDashboard from './CustomerInventoryDashboard';
-import ExpertGuidanceSection from './ExpertGuidanceSection'; // Import the new component
+import ExpertGuidanceSection from './ExpertGuidanceSection';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+// Dynamically import the map component
+const QRCodeScanMapComponent = dynamic(
+  () => import('./QRCodeScanMap'),
+  { ssr: false }
+);
 
 const COLORS = ['#808080', '#F7931A', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -119,12 +125,10 @@ const PieChartCard: React.FC<PieChartCardProps> = ({ title, description, icon, d
   );
 };
 
-// New interface for QR code data with batch
 interface QRCodeData extends Location {
   batchId: string;
 }
 
-// Mock batch data (you would replace this with actual batch data)
 const batchIds = ['Batch001', 'Batch002', 'Batch003'];
 
 const BatchSelector: React.FC<{ batches: string[], selectedBatch: string, onBatchChange: (batch: string) => void }> = 
@@ -143,24 +147,23 @@ const BatchSelector: React.FC<{ batches: string[], selectedBatch: string, onBatc
 );
 
 export function BusinessDashboard() {
-  const [isClient, setIsClient] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setIsClient(true);
+    setMounted(true);
     setIsLoading(false);
   }, []);
 
-    // Simulate loading when batch changes
-    useEffect(() => {
-      setIsLoading(true);
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 500); // Simulate a short loading time
-  
-      return () => clearTimeout(timer);
-    }, [selectedBatch]);
+  useEffect(() => {
+    setIsLoading(true);
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [selectedBatch]);
 
   const filteredQRCodes = useMemo(() => {
     return selectedBatch === 'all' 
@@ -191,8 +194,6 @@ export function BusinessDashboard() {
       };
     }
 
-    console.log('filteredQRCodes is available:', filteredQRCodes.length);
-
     const totalQRCodes = filteredQRCodes.length;
     const claimedQRCodes = filteredQRCodes.filter(qr => qr.status === 'Claimed').length;
     const unclaimedQRCodes = totalQRCodes - claimedQRCodes;
@@ -204,14 +205,12 @@ export function BusinessDashboard() {
     const claimedBitcoinRewards = totalBitcoinRewards;
     const unclaimedBitcoinRewards = 0;
 
-    // You may need to adjust this part to filter cumulativeData based on the selected batch
     const lastWeekData = cumulativeData.slice(-7);
     const averageDailyClaimRate = 
       (lastWeekData[lastWeekData.length - 1].Claimed - lastWeekData[0].Claimed) / 7;
 
     const lastDay = cumulativeData[cumulativeData.length - 1];
     
-    // Project future data (you may need to adjust this based on batch data)
     const projectedData: CumulativeDataPoint[] = [];
     let currentActive = lastDay.Active;
     let currentClaimed = lastDay.Claimed;
@@ -230,13 +229,10 @@ export function BusinessDashboard() {
       });
     }
 
-    // Combine historical and projected data
     const combinedQRCodeStatusOverTime = [
       ...cumulativeData,
       ...projectedData
     ];
-
-    console.log('Combined QR Code Status Over Time:', combinedQRCodeStatusOverTime);
 
     return {
       totalQRCodes,
@@ -250,8 +246,8 @@ export function BusinessDashboard() {
     };
   }, [filteredQRCodes]);
 
-  if (!isClient) {
-    return null; // or a loading indicator
+  if (!mounted) {
+    return null;
   }
 
   if (totalQRCodes === 0) {
@@ -260,7 +256,6 @@ export function BusinessDashboard() {
 
   const businessName = "NiHowdy";
 
-  // Mock data for scan times distribution (you may need to adjust this based on batch data)
   const scanTimes = [
     { name: '00:00-04:00', scans: 1200 },
     { name: '04:00-08:00', scans: 1800 },
@@ -275,7 +270,7 @@ export function BusinessDashboard() {
       <div className="fixed top-0 left-0 right-0 z-50">
         <HeaderComponent />
       </div>
-      <div className="container mx-auto p-4 space-y-4 mt-16"> {/* Add margin-top here */}
+      <div className="container mx-auto p-4 space-y-4 mt-16">
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between mb-6">
           <div className="flex items-center">
             <img src="/images/Bitcoin Logo.png" alt="Bitcoin Logo" className="w-8 h-8 mr-2" />
@@ -297,101 +292,100 @@ export function BusinessDashboard() {
           </div>
         ) : (
           <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <PieChartCard
+                title={`Total QR Codes: ${new Intl.NumberFormat('en-US').format(totalQRCodes)}`}
+                description="Allocation of claimed vs. unclaimed QR Codes"
+                icon={<QrCode className="h-4 w-4 text-muted-foreground" />}
+                data={[
+                  { name: 'Claimed', value: claimedQRCodes },
+                  { name: 'Unclaimed', value: unclaimedQRCodes },
+                ]}
+              />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <PieChartCard
-            title={`Total QR Codes: ${new Intl.NumberFormat('en-US').format(totalQRCodes)}`}
-            description="Allocation of claimed vs. unclaimed QR Codes"
-            icon={<QrCode className="h-4 w-4 text-muted-foreground" />}
-            data={[
-              { name: 'Claimed', value: claimedQRCodes },
-              { name: 'Unclaimed', value: unclaimedQRCodes },
-            ]}
-          />
+              <PieChartCard
+                title={`Total Bitcoin Rewards: ${totalBitcoinRewards.toFixed(8)} BTC`}
+                description="Allocation of claimed vs. unclaimed Rewards"
+                icon={<Bitcoin className="h-4 w-4 text-muted-foreground" />}
+                data={[
+                  { name: 'Claimed', value: claimedBitcoinRewards },
+                  { name: 'Unclaimed', value: unclaimedBitcoinRewards },
+                ]}
+              />
 
-          <PieChartCard
-            title={`Total Bitcoin Rewards: ${totalBitcoinRewards.toFixed(8)} BTC`}
-            description="Allocation of claimed vs. unclaimed Rewards"
-            icon={<Bitcoin className="h-4 w-4 text-muted-foreground" />}
-            data={[
-              { name: 'Claimed', value: claimedBitcoinRewards },
-              { name: 'Unclaimed', value: unclaimedBitcoinRewards },
-            ]}
-          />
+              <PieChartCard
+                title={`Claim Rate: ${((claimedQRCodes / totalQRCodes) * 100).toFixed(2)}%`}
+                description="Percentage of QR codes that have been claimed"
+                icon={<QrCode className="h-4 w-4 text-muted-foreground" />}
+                data={[
+                  { name: 'Claimed', value: claimedQRCodes },
+                  { name: 'Unclaimed', value: unclaimedQRCodes },
+                ]}
+              />
 
-          <PieChartCard
-            title={`Claim Rate: ${((claimedQRCodes / totalQRCodes) * 100).toFixed(2)}%`}
-            description="Percentage of QR codes that have been claimed"
-            icon={<QrCode className="h-4 w-4 text-muted-foreground" />}
-            data={[
-              { name: 'Claimed', value: claimedQRCodes },
-              { name: 'Unclaimed', value: unclaimedQRCodes },
-            ]}
-          />
+              <PieChartCard
+                title={`Conversion Rate: ${((claimedQRCodes / totalQRCodes) * 100).toFixed(2)}%`}
+                description="Percentage of QR codes that have been claimed"
+                icon={<PieChartIcon className="h-4 w-4 text-muted-foreground" />}
+                data={[
+                  { name: 'Claimed', value: claimedQRCodes },
+                  { name: 'Unclaimed', value: unclaimedQRCodes },
+                ]}
+                showTotal={false}
+              />
+            </div>
 
-          <PieChartCard
-            title={`Conversion Rate: ${((claimedQRCodes / totalQRCodes) * 100).toFixed(2)}%`}
-            description="Percentage of QR codes that have been claimed"
-            icon={<PieChartIcon className="h-4 w-4 text-muted-foreground" />}
-            data={[
-              { name: 'Claimed', value: claimedQRCodes },
-              { name: 'Unclaimed', value: unclaimedQRCodes },
-            ]}
-            showTotal={false}
-          />
-        </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card style={cardStyle}>
+                <CardHeader>
+                  <CardTitle className="text-[#ffffff]">QR Code Scan Locations</CardTitle>
+                  <CardDescription className="text-muted-foreground">Heat map of claimed QR code scans across the USA</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[400px] overflow-hidden rounded-lg">
+                  {mounted && <QRCodeScanMapComponent locations={mockQRCodeLocations.filter(qr => qr.status === 'Claimed')} />}
+                </CardContent>
+              </Card>
+              <Card style={cardStyle}>
+                <CardHeader>
+                  <CardTitle className="text-[#ffffff]">Scan Times Distribution</CardTitle>
+                  <CardDescription>Number of scans during different times of the day</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={scanTimes}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Bar dataKey="scans" fill="#F7931A" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card style={cardStyle}>
-            <CardHeader>
-              <CardTitle className="text-[#ffffff]">QR Code Scan Locations</CardTitle>
-              <CardDescription className="text-muted-foreground">Heat map of claimed QR code scans across the USA</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[400px] overflow-hidden rounded-lg">
-              <QRCodeScanMapComponent locations={mockQRCodeLocations.filter(qr => qr.status === 'Claimed')} />
-            </CardContent>
-          </Card>
-          <Card style={cardStyle}>
-            <CardHeader>
-              <CardTitle className="text-[#ffffff]">Scan Times Distribution</CardTitle>
-              <CardDescription>Number of scans during different times of the day</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={scanTimes}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Bar dataKey="scans" fill="#F7931A" />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
+            {combinedQRCodeStatusOverTime.length > 0 && (
+              <Card style={cardStyle}>
+                <CardHeader>
+                  <CardTitle className="text-[#ffffff]">QR Code Status Over Time (with Projection)</CardTitle>
+                  <CardDescription>Number of active and claimed QR codes over time, with future projection</CardDescription>
+                </CardHeader>
+                <CardContent className="h-[400px]">
+                  <ProjectionChart data={combinedQRCodeStatusOverTime} today={today} />
+                </CardContent>
+              </Card>
+            )}
 
-        {combinedQRCodeStatusOverTime.length > 0 && (
-          <Card style={cardStyle}>
-            <CardHeader>
-              <CardTitle className="text-[#ffffff]">QR Code Status Over Time (with Projection)</CardTitle>
-              <CardDescription>Number of active and claimed QR codes over time, with future projection</CardDescription>
-            </CardHeader>
-            <CardContent className="h-[400px]">
-              <ProjectionChart data={combinedQRCodeStatusOverTime} today={today} />
-            </CardContent>
-          </Card>
-        )}
-
-        <Card style={cardStyle}>
-          <CardHeader>
-            <CardTitle className="text-[#ffffff]">Customer Inventory Tracking</CardTitle>
-            <CardDescription>Monitor customer purchases and product consumption</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <CustomerInventoryDashboard />
-          </CardContent>
-        </Card>
-        <ExpertGuidanceSection />
-        </>
+            <Card style={cardStyle}>
+              <CardHeader>
+                <CardTitle className="text-[#ffffff]">Customer Inventory Tracking</CardTitle>
+                <CardDescription>Monitor customer purchases and product consumption</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CustomerInventoryDashboard />
+              </CardContent>
+            </Card>
+            <ExpertGuidanceSection />
+          </>
         )}
       </div>
     </div>
