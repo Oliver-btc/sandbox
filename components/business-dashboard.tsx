@@ -17,7 +17,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 // Dynamically import the map component
 const QRCodeScanMapComponent = dynamic(
   () => import('./QRCodeScanMap'),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => <div className="h-full w-full flex items-center justify-center">Loading map...</div>
+  }
 );
 
 const COLORS = ['#808080', '#F7931A', '#00C49F', '#FFBB28', '#FF8042'];
@@ -165,6 +168,13 @@ export function BusinessDashboard() {
     return () => clearTimeout(timer);
   }, [selectedBatch]);
 
+  // Early return while not mounted
+  if (!mounted) {
+    return <div className="min-h-screen bg-gradient-to-b from-[#000000] via-[#000000] to-[#7e7c83]">
+      <div className="container mx-auto p-4">Loading...</div>
+    </div>;
+  }
+
   const filteredQRCodes = useMemo(() => {
     return selectedBatch === 'all' 
       ? mockQRCodeLocations 
@@ -211,7 +221,7 @@ export function BusinessDashboard() {
 
     const lastDay = cumulativeData[cumulativeData.length - 1];
     
-    const projectedData: CumulativeDataPoint[] = [];
+    const projectedData = [];
     let currentActive = lastDay.Active;
     let currentClaimed = lastDay.Claimed;
     let currentDate = new Date(lastDay.date);
@@ -245,10 +255,6 @@ export function BusinessDashboard() {
       today
     };
   }, [filteredQRCodes]);
-
-  if (!mounted) {
-    return null;
-  }
 
   if (totalQRCodes === 0) {
     return <div>Loading or no data available...</div>;
