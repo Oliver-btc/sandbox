@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState } from 'react'
 import { Package, ShoppingCart, UserCircle, ChevronUp, ChevronDown, Menu, Bitcoin } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
