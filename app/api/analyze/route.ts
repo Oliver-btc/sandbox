@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY || '',
 });
 
 async function extractSiteLogo(html: string, url: string) {
@@ -272,9 +272,15 @@ export async function POST(request: Request) {
       })
     ]);
 
-    const generalPitch = generalPitchResponse.choices[0].message.content ?? '';
-    const specificPitch = specificPitchResponse.choices[0].message.content ?? '';
-    const customerFeedback = feedbackResponse.choices[0].message.content ?? '';
+    if (!generalPitchResponse.choices[0]?.message?.content || 
+        !specificPitchResponse.choices[0]?.message?.content || 
+        !feedbackResponse.choices[0]?.message?.content) {
+      throw new Error('Failed to generate content from OpenAI');
+    }
+
+    const generalPitch = generalPitchResponse.choices[0].message.content;
+    const specificPitch = specificPitchResponse.choices[0].message.content;
+    const customerFeedback = feedbackResponse.choices[0].message.content;
 
     const customerName = customerFeedback?.match(/- ([^"]+)$/)?.[1] || "Happy Customer";
     const testimonial = customerFeedback ? customerFeedback.replace(/- [^"]+$/, '').trim() : '';
@@ -320,9 +326,7 @@ export async function POST(request: Request) {
       images = { general: generalImage, specific: specificImage, feedback: feedbackImage };
     }
 
-// Inside your POST function, update the quiz generation code:
-
-console.log('Generating quiz question and answers...');
+    console.log('Generating quiz question and answers...');
     const quizCompletion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
@@ -362,9 +366,13 @@ console.log('Generating quiz question and answers...');
       max_tokens: 500
     });
 
+    if (!quizCompletion.choices[0]?.message?.content) {
+      throw new Error('Failed to generate quiz content');
+    }
+
     let quizData;
     try {
-      quizData = JSON.parse(quizCompletion.choices[0].message.content || '{}');
+      quizData = JSON.parse(quizCompletion.choices[0].message.content);
       
       const options = [
         quizData.correctAnswer,
