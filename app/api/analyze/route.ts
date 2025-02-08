@@ -11,7 +11,6 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 });
 
-
 // Helper function for consistent error responses
 function errorResponse(message: string, status: number = 500) {
   console.error(`API Error: ${message}`);
