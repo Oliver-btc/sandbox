@@ -2,12 +2,15 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-// Minimal configuration
-export const dynamic = 'force-dynamic';
+// New Route Segment Config
+export const runtime = 'nodejs';
+export const preferredRegion = 'auto';
+export const maxDuration = 300;
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 });
+
 
 // Helper function for consistent error responses
 function errorResponse(message: string, status: number = 500) {
