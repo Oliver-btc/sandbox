@@ -2,10 +2,10 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-// Configure longer timeout for Vercel
-export const config = {
-  maxDuration: 300
-};
+export const runtime = 'edge'; // Optional: Use edge runtime for better performance
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const maxDuration = 300; // 5 minutes timeout
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
