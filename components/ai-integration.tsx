@@ -18,12 +18,15 @@ export default function URLAnalyzer() {
   const router = useRouter();
 
 
+// In your URLAnalyzer component, update the handleSubmit function:
+
 const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
   e.preventDefault();
   setIsLoading(true);
   setError(null);
 
   try {
+    console.log('Sending request with URL:', url);
     const response = await fetch('/api/analyze', {
       method: 'POST',
       headers: {
@@ -35,38 +38,34 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
       }),
     });
 
-    // Log the raw response for debugging
+    // Log raw response details
     console.log('Response status:', response.status);
     console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
     let data;
     try {
-      const textResponse = await response.text(); // Get response as text first
+      const textResponse = await response.text();
       console.log('Raw response:', textResponse);
-      
+
       try {
-        data = JSON.parse(textResponse); // Then try to parse it
+        data = JSON.parse(textResponse);
       } catch (parseError) {
-        console.error('Failed to parse response as JSON:', parseError);
-        throw new Error(`Invalid JSON response: ${textResponse.slice(0, 200)}...`);
+        console.error('JSON Parse Error:', parseError);
+        throw new Error(`Invalid JSON response from server: ${textResponse.slice(0, 200)}...`);
       }
     } catch (error) {
-      console.error('Error reading response:', error);
+      console.error('Response Reading Error:', error);
       throw new Error('Failed to read server response');
     }
 
     if (!response.ok) {
-      throw new Error(data.error || `Server error: ${response.status}`);
+      throw new Error(data?.error || `Server error: ${response.status}`);
     }
 
-    if (!data) {
-      throw new Error('Empty response received');
-    }
-
-    // Validate the response data structure
-    if (!data.generalPitch || !data.specificPitch || !data.customerFeedback || !data.quiz) {
+    // Validate response data structure
+    if (!data || !data.generalPitch || !data.specificPitch || !data.customerFeedback || !data.quiz) {
       console.error('Invalid response structure:', data);
-      throw new Error('Incomplete data received from server');
+      throw new Error('Invalid response format from server');
     }
 
     // Store the AI-generated content
@@ -74,7 +73,7 @@ const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     router.push('/ai-qr');
     
   } catch (error: unknown) {
-    console.error('Error in handleSubmit:', error);
+    console.error('Full error details:', error);
     setError(error instanceof Error ? error.message : 'An unexpected error occurred');
   } finally {
     setIsLoading(false);

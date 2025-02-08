@@ -24,7 +24,10 @@ function errorResponse(message: string, status: number = 500) {
       status,
       headers: { 
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-store, must-revalidate'
+        'Cache-Control': 'no-store, must-revalidate',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
       }
     }
   );
@@ -479,7 +482,10 @@ export async function POST(request: Request) {
             status: 200,
             headers: { 
               'Content-Type': 'application/json',
-              'Cache-Control': 'no-store, must-revalidate'
+              'Cache-Control': 'no-store, must-revalidate',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'POST, OPTIONS',
+              'Access-Control-Allow-Headers': 'Content-Type'
             }
           }
         );
