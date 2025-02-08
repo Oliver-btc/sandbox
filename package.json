@@ -59,7 +59,8 @@
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.169.0",
-    "tough-cookie": "^5.1.0"
+    "tough-cookie": "^5.1.0",
+    "vercel": "^41.0.2"
   },
   "devDependencies": {
     "@types/axios": "^0.14.4",

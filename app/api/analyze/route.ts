@@ -2,6 +2,11 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
+// Configure longer timeout for Vercel
+export const config = {
+  maxDuration: 300
+};
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 });
@@ -65,22 +70,30 @@ async function extractSiteLogo(html: string, url: string) {
 async function scrapeUrl(url: string, retryCount = 3) {
   const headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
     'Cache-Control': 'no-cache',
     'Pragma': 'no-cache',
-    'Upgrade-Insecure-Requests': '1',
+    'Connection': 'keep-alive',
   };
 
+  let lastError;
+  
   for (let attempt = 0; attempt < retryCount; attempt++) {
     try {
       if (attempt > 0) {
         await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
       }
 
-      const response = await fetch(url, { headers });
+      const response = await fetch(url, { 
+        headers,
+        next: { revalidate: 0 } // Disable cache
+      });
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`HTTP ${response.status} on attempt ${attempt + 1}:`, errorText);
+        
         if (response.status === 403) {
           const urlInfo = await extractInfoFromUrl(url);
           if (urlInfo) {
@@ -91,15 +104,22 @@ async function scrapeUrl(url: string, retryCount = 3) {
       }
       
       const html = await response.text();
+      if (!html || html.trim().length === 0) {
+        throw new Error('Empty response received');
+      }
+      
       return html;
     } catch (error) {
+      lastError = error;
       console.error(`Attempt ${attempt + 1} failed:`, error);
+      
       if (attempt === retryCount - 1) {
         throw new Error(`Failed to fetch URL after ${retryCount} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   }
-  throw new Error('Failed to fetch URL after all retries');
+  
+  throw lastError || new Error('Failed to fetch URL after all retries');
 }
 
 async function extractInfoFromUrl(url: string) {
@@ -180,252 +200,340 @@ function extractProductInfo(html: string) {
 }
 
 export async function POST(request: Request) {
-  try {
-    console.log('Starting URL analysis...');
+  console.log('Starting URL analysis...');
+  console.log('Environment variables present:', {
+    hasOpenAI: !!process.env.OPENAI_API_KEY,
+  });
 
+  try {
     if (!process.env.OPENAI_API_KEY) {
       console.error('OpenAI API key is not configured');
-      return NextResponse.json(
-        { error: 'OpenAI API key is not configured' },
-        { status: 500 }
+      return new NextResponse(
+        JSON.stringify({ error: 'OpenAI API key is not configured' }),
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
 
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      console.error('Failed to parse request body:', e);
+      return new NextResponse(
+        JSON.stringify({ error: 'Invalid request body' }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
     console.log('Received request with body:', body);
 
-    if (!body.url) {
-      return NextResponse.json(
-        { error: 'URL is required' },
-        { status: 400 }
+    if (!body?.url) {
+      return new NextResponse(
+        JSON.stringify({ error: 'URL is required' }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
 
     try {
       new URL(body.url);
     } catch (e) {
-      return NextResponse.json(
-        { error: 'Invalid URL format' },
-        { status: 400 }
+      return new NextResponse(
+        JSON.stringify({ error: 'Invalid URL format' }),
+        { 
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
 
-    console.log('Scraping URL content...');
-    const html = await scrapeUrl(body.url);
-    console.log('Content scraped successfully');
+    let html;
+    try {
+      console.log('Scraping URL content...');
+      html = await scrapeUrl(body.url);
+      console.log('Content scraped successfully');
+    } catch (error) {
+      console.error('Error scraping URL:', error);
+      return new NextResponse(
+        JSON.stringify({ 
+          error: `Failed to scrape URL: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        }),
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
 
-    const { description: productInfo, reviews } = extractProductInfo(html);
-    console.log('Product information and reviews extracted');
+    let productInfo, reviews;
+    try {
+      const extracted = extractProductInfo(html);
+      productInfo = extracted.description;
+      reviews = extracted.reviews;
+      console.log('Product information and reviews extracted');
+    } catch (error) {
+      console.error('Error extracting product info:', error);
+      return new NextResponse(
+        JSON.stringify({ 
+          error: `Failed to extract product information: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        }),
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
 
-    // Extract logo and site name
-    const logoUrl = await extractSiteLogo(html, body.url);
-    const siteName = new URL(body.url).hostname.replace(/^www\./i, '');
+    let logoUrl, siteName;
+    try {
+      logoUrl = await extractSiteLogo(html, body.url);
+      siteName = new URL(body.url).hostname.replace(/^www\./i, '');
+    } catch (error) {
+      console.error('Error extracting logo:', error);
+      logoUrl = '/api/placeholder/64/64';
+      siteName = new URL(body.url).hostname;
+    }
 
-    console.log('Generating sales pitches...');
-    const [generalPitchResponse, specificPitchResponse, feedbackResponse] = await Promise.all([
-      openai.chat.completions.create({
+    console.log('Generating content with OpenAI...');
+    try {
+      const [generalPitchResponse, specificPitchResponse, feedbackResponse] = await Promise.all([
+        openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: "Create a short, engaging description focused on the overall value proposition and general benefits of the product."
+            },
+            {
+              role: "user",
+              content: `Create a 1-2 sentence sales pitch about the general concept and value of this product: ${productInfo}`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 150
+        }),
+        openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: "Create a short, engaging description focused on a specific use case or unique feature of the product."
+            },
+            {
+              role: "user",
+              content: `Create a 1-2 sentence sales pitch highlighting a specific use case or unique feature of this product: ${productInfo}`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 150
+        }),
+        openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content: "Create an authentic-sounding customer testimonial. Include a plausible customer name at the end in the format '- Name'."
+            },
+            {
+              role: "user",
+              content: reviews.length > 0
+                ? `Create a genuine-sounding customer testimonial based on these reviews: ${reviews.join(" | ")}`
+                : `Create a genuine-sounding customer testimonial for this product: ${productInfo}`
+            }
+          ],
+          temperature: 0.8,
+          max_tokens: 150
+        })
+      ]);
+
+      if (!generalPitchResponse.choices[0]?.message?.content || 
+          !specificPitchResponse.choices[0]?.message?.content || 
+          !feedbackResponse.choices[0]?.message?.content) {
+        throw new Error('Failed to generate content from OpenAI');
+      }
+
+      const generalPitch = generalPitchResponse.choices[0].message.content;
+      const specificPitch = specificPitchResponse.choices[0].message.content;
+      const customerFeedback = feedbackResponse.choices[0].message.content;
+
+      const customerName = customerFeedback.match(/- ([^"]+)$/)?.[1] || "Happy Customer";
+      const testimonial = customerFeedback.replace(/- [^"]+$/, '').trim();
+
+      console.log('Handling image generation/placeholder selection...');
+      let images;
+      
+      if (body.usePlaceholders) {
+        console.log('Using placeholder images');
+        images = {
+          general: { data: [{ url: '/images/PicPlaceholder.png' }] },
+          specific: { data: [{ url: '/images/PicPlaceholder.png' }] },
+          feedback: { data: [{ url: '/images/PicPlaceholder.png' }] }
+        };
+      } else {
+        console.log('Generating AI images');
+        try {
+          const [generalImage, specificImage, feedbackImage] = await Promise.all([
+            openai.images.generate({
+              model: "dall-e-3",
+              prompt: `Create a professional marketing image that represents this general product concept: ${generalPitch}. The image should be clean, professional, and focus on the overall value proposition.`,
+              n: 1,
+              size: "1024x1024",
+              quality: "standard",
+              style: "natural"
+            }),
+            openai.images.generate({
+              model: "dall-e-3",
+              prompt: `Create a professional marketing image that represents this specific use case: ${specificPitch}. The image should be clean, professional, and focus on demonstrating the specific feature or use case.`,
+              n: 1,
+              size: "1024x1024",
+              quality: "standard",
+              style: "natural"
+            }),
+            openai.images.generate({
+              model: "dall-e-3",
+              prompt: `Create a lifestyle image that represents a happy customer using this product. The image should be authentic and relatable, showing the positive impact of the product. Based on this testimonial: ${testimonial}`,
+              n: 1,
+              size: "1024x1024",
+              quality: "standard",
+              style: "natural"
+            })
+          ]);
+          images = { general: generalImage, specific: specificImage, feedback: feedbackImage };
+        } catch (error) {
+          console.error('Error generating AI images:', error);
+          images = {
+            general: { data: [{ url: '/images/PicPlaceholder.png' }] },
+            specific: { data: [{ url: '/images/PicPlaceholder.png' }] },
+            feedback: { data: [{ url: '/images/PicPlaceholder.png' }] }
+          };
+        }
+      }
+
+      console.log('Generating quiz question and answers...');
+      const quizCompletion = await openai.chat.completions.create({
         model: "gpt-3.5-turbo",
         messages: [
           {
             role: "system",
-            content: "Create a short, engaging description focused on the overall value proposition and general benefits of the product."
+            content: `You are a witty quiz creator who generates fun and engaging multiple choice questions. 
+            Your wrong answers should be:
+            1. Obviously incorrect but related to the product
+            2. Humorous and entertaining
+            3. Written in a playful tone
+            4. Not offensive or inappropriate`
           },
           {
             role: "user",
-            content: `Create a 1-2 sentence sales pitch about the general concept and value of this product: ${productInfo}`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 150
-      }),
-      openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content: "Create a short, engaging description focused on a specific use case or unique feature of the product."
-          },
-          {
-            role: "user",
-            content: `Create a 1-2 sentence sales pitch highlighting a specific use case or unique feature of this product: ${productInfo}`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 150
-      }),
-      openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content: "Create an authentic-sounding customer testimonial. Include a plausible customer name at the end in the format '- Name'."
-          },
-          {
-            role: "user",
-            content: reviews.length > 0
-              ? `Create a genuine-sounding customer testimonial based on these reviews: ${reviews.join(" | ")}`
-              : `Create a genuine-sounding customer testimonial for this product: ${productInfo}`
+            content: `Based on this product info: ${productInfo}
+            
+            Create a quiz with:
+            1. A clear question about the main value proposition
+            2. The correct answer that accurately states the key benefit
+            3. Two humorous but obviously incorrect answers that are related to the product's purpose
+            
+            Format the response as JSON:
+            {
+              "question": "What is the main value proposition of this product?",
+              "correctAnswer": "actual value proposition",
+              "wrongAnswer1": "funny but obviously wrong answer 1",
+              "wrongAnswer2": "funny but obviously wrong answer 2"
+            }`
           }
         ],
         temperature: 0.8,
-        max_tokens: 150
-      })
-    ]);
+        max_tokens: 500
+      });
 
-    if (!generalPitchResponse.choices[0]?.message?.content || 
-        !specificPitchResponse.choices[0]?.message?.content || 
-        !feedbackResponse.choices[0]?.message?.content) {
-      throw new Error('Failed to generate content from OpenAI');
-    }
-
-    const generalPitch = generalPitchResponse.choices[0].message.content;
-    const specificPitch = specificPitchResponse.choices[0].message.content;
-    const customerFeedback = feedbackResponse.choices[0].message.content;
-
-    const customerName = customerFeedback?.match(/- ([^"]+)$/)?.[1] || "Happy Customer";
-    const testimonial = customerFeedback ? customerFeedback.replace(/- [^"]+$/, '').trim() : '';
-
-    console.log('Handling image generation/placeholder selection...');
-    let images;
-    
-    if (body.usePlaceholders) {
-      console.log('Using placeholder images');
-      images = {
-        general: { data: [{ url: '/images/PicPlaceholder.png' }] },
-        specific: { data: [{ url: '/images/PicPlaceholder.png' }] },
-        feedback: { data: [{ url: '/images/PicPlaceholder.png' }] }
-      };
-    } else {
-      console.log('Generating AI images');
-      const [generalImage, specificImage, feedbackImage] = await Promise.all([
-        openai.images.generate({
-          model: "dall-e-3",
-          prompt: `Create a professional marketing image that represents this general product concept: ${generalPitch}. The image should be clean, professional, and focus on the overall value proposition.`,
-          n: 1,
-          size: "1024x1024",
-          quality: "standard",
-          style: "natural"
-        }),
-        openai.images.generate({
-          model: "dall-e-3",
-          prompt: `Create a professional marketing image that represents this specific use case: ${specificPitch}. The image should be clean, professional, and focus on demonstrating the specific feature or use case.`,
-          n: 1,
-          size: "1024x1024",
-          quality: "standard",
-          style: "natural"
-        }),
-        openai.images.generate({
-          model: "dall-e-3",
-          prompt: `Create a lifestyle image that represents a happy customer using this product. The image should be authentic and relatable, showing the positive impact of the product. Based on this testimonial: ${testimonial}`,
-          n: 1,
-          size: "1024x1024",
-          quality: "standard",
-          style: "natural"
-        })
-      ]);
-      images = { general: generalImage, specific: specificImage, feedback: feedbackImage };
-    }
-
-    console.log('Generating quiz question and answers...');
-    const quizCompletion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: `You are a witty quiz creator who generates fun and engaging multiple choice questions. 
-          Your wrong answers should be:
-          1. Obviously incorrect but related to the product
-          2. Humorous and entertaining
-          3. Written in a playful tone
-          4. Not offensive or inappropriate
-          
-          Example wrong answers style:
-          - If the product is a cloud storage service, a wrong answer might be "Stores data in actual clouds, hoping it doesn't rain data"
-          - If it's a productivity app, "Replaces all your tasks with pictures of cute puppies"
-          - If it's an e-commerce platform, "Hires professional shoppers to do interpretive dances of your purchases"`
-        },
-        {
-          role: "user",
-          content: `Based on this product info: ${productInfo}
-          
-          Create a quiz with:
-          1. A clear question about the main value proposition
-          2. The correct answer that accurately states the key benefit
-          3. Two humorous but obviously incorrect answers that are related to the product's purpose
-          
-          Format the response as JSON:
-          {
-            "question": "What is the main value proposition of this product?",
-            "correctAnswer": "actual value proposition",
-            "wrongAnswer1": "funny but obviously wrong answer 1",
-            "wrongAnswer2": "funny but obviously wrong answer 2"
-          }`
-        }
-      ],
-      temperature: 0.8,
-      max_tokens: 500
-    });
-
-    if (!quizCompletion.choices[0]?.message?.content) {
-      throw new Error('Failed to generate quiz content');
-    }
-
-    let quizData;
-    try {
-      quizData = JSON.parse(quizCompletion.choices[0].message.content);
-      
-      const options = [
-        quizData.correctAnswer,
-        quizData.wrongAnswer1,
-        quizData.wrongAnswer2
-      ];
-      
-      // Shuffle options
-      for (let i = options.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [options[i], options[j]] = [options[j], options[i]];
+      if (!quizCompletion.choices[0]?.message?.content) {
+        throw new Error('Failed to generate quiz content');
       }
 
-      const correctAnswerIndex = options.indexOf(quizData.correctAnswer);
-
-      return NextResponse.json({
-        generalPitch: {
-          description: generalPitch,
-          imageUrl: images.general.data[0].url
-        },
-        specificPitch: {
-          description: specificPitch,
-          imageUrl: images.specific.data[0].url
-        },
-        customerFeedback: {
-          testimonial: testimonial,
-          customerName: customerName,
-          imageUrl: images.feedback.data[0].url
-        },
-        quiz: {
-          question: quizData.question,
-          options: options,
-          correctAnswer: correctAnswerIndex,
-          logoUrl: logoUrl,
-          siteName: siteName
+      let quizData;
+      try {
+        quizData = JSON.parse(quizCompletion.choices[0].message.content);
+        
+        const options = [
+          quizData.correctAnswer,
+          quizData.wrongAnswer1,
+          quizData.wrongAnswer2
+        ];
+        
+        // Shuffle options
+        for (let i = options.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [options[i], options[j]] = [options[j], options[i]];
         }
-      });
+
+        const correctAnswerIndex = options.indexOf(quizData.correctAnswer);
+
+        return new NextResponse(
+          JSON.stringify({
+            generalPitch: {
+              description: generalPitch,
+              imageUrl: images.general.data[0].url
+            },
+            specificPitch: {
+              description: specificPitch,
+              imageUrl: images.specific.data[0].url
+            },
+            customerFeedback: {
+              testimonial: testimonial,
+              customerName: customerName,
+              imageUrl: images.feedback.data[0].url
+            },
+            quiz: {
+              question: quizData.question,
+              options: options,
+              correctAnswer: correctAnswerIndex,
+              logoUrl: logoUrl,
+              siteName: siteName
+            }
+          }),
+          { 
+            status: 200,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      } catch (error) {
+        console.error('Error processing quiz data:', error);
+        return new NextResponse(
+          JSON.stringify({ error: 'Failed to process quiz data' }),
+          { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        );
+      }
     } catch (error) {
-      console.error('Error processing quiz data:', error);
-      return NextResponse.json(
-        { error: 'Failed to process quiz data' },
-        { status: 500 }
+      console.error('Error generating OpenAI content:', error);
+      return new NextResponse(
+        JSON.stringify({ 
+          error: `Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}` 
+        }),
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
   } catch (error: unknown) {
     console.error('Error processing request:', error);
-    return NextResponse.json(
+    return new NextResponse(
+      JSON.stringify({ 
+        error: `Failed to process request: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      }),
       { 
-        error: `Failed to process request: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }` 
-      },
-      { status: 500 }
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
 }

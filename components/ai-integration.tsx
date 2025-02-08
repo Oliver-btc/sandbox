@@ -21,7 +21,7 @@ export default function URLAnalyzer() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-
+  
     try {
       const response = await fetch('/api/analyze', {
         method: 'POST',
@@ -33,19 +33,35 @@ export default function URLAnalyzer() {
           usePlaceholders
         }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to analyze URL');
+  
+      let data;
+      try {
+        data = await response.json();
+      } catch (error) {
+        console.error('Failed to parse response:', error);
+        throw new Error('Server returned an invalid response. Please try again.');
       }
-
+  
+      if (!response.ok) {
+        throw new Error(data.error || `Server error: ${response.status}`);
+      }
+  
+      if (!data) {
+        throw new Error('Empty response received');
+      }
+  
+      // Validate the response data
+      if (!data.generalPitch || !data.specificPitch || !data.customerFeedback || !data.quiz) {
+        throw new Error('Incomplete data received from server');
+      }
+  
       // Store the AI-generated content
       localStorage.setItem('analysisResults', JSON.stringify(data));
       router.push('/ai-qr');
       
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : 'Failed to analyze URL');
+      console.error('Error in handleSubmit:', error);
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
