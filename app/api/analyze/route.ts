@@ -2,14 +2,31 @@
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
-// Simplified configuration for API route
-export const fetchCache = 'force-no-store';
-export const dynamicParams = true;
-export const revalidate = 0;
+// Minimal configuration
+export const dynamic = 'force-dynamic';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || '',
 });
+
+// Helper function for consistent error responses
+function errorResponse(message: string, status: number = 500) {
+  console.error(`API Error: ${message}`);
+  return new NextResponse(
+    JSON.stringify({ 
+      error: message,
+      timestamp: new Date().toISOString(),
+      path: '/api/analyze'
+    }),
+    { 
+      status,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store, must-revalidate'
+      }
+    }
+  );
+}
 
 async function extractSiteLogo(html: string, url: string) {
   try {
@@ -200,79 +217,45 @@ function extractProductInfo(html: string) {
 }
 
 export async function POST(request: Request) {
-  console.log('Starting URL analysis...');
-  console.log('Environment variables present:', {
-    hasOpenAI: !!process.env.OPENAI_API_KEY,
-  });
-
+  console.log('=== Starting new request ===');
+  
   try {
+    // Verify OpenAI API key
     if (!process.env.OPENAI_API_KEY) {
-      console.error('OpenAI API key is not configured');
-      return new NextResponse(
-        JSON.stringify({ error: 'OpenAI API key is not configured' }),
-        { 
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      return errorResponse('OpenAI API key is not configured', 500);
     }
 
+    // Parse request body
     let body;
     try {
       body = await request.json();
+      console.log('Request body:', { url: body.url, usePlaceholders: body.usePlaceholders });
     } catch (e) {
-      console.error('Failed to parse request body:', e);
-      return new NextResponse(
-        JSON.stringify({ error: 'Invalid request body' }),
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      return errorResponse('Invalid request body', 400);
     }
 
-    console.log('Received request with body:', body);
-
+    // Validate URL
     if (!body?.url) {
-      return new NextResponse(
-        JSON.stringify({ error: 'URL is required' }),
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      return errorResponse('URL is required', 400);
     }
 
     try {
       new URL(body.url);
     } catch (e) {
-      return new NextResponse(
-        JSON.stringify({ error: 'Invalid URL format' }),
-        { 
-          status: 400,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      return errorResponse('Invalid URL format', 400);
     }
 
+    // Scrape URL
     let html;
     try {
       console.log('Scraping URL content...');
       html = await scrapeUrl(body.url);
       console.log('Content scraped successfully');
     } catch (error) {
-      console.error('Error scraping URL:', error);
-      return new NextResponse(
-        JSON.stringify({ 
-          error: `Failed to scrape URL: ${error instanceof Error ? error.message : 'Unknown error'}` 
-        }),
-        { 
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      return errorResponse(`Failed to scrape URL: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
 
+    // Extract product info
     let productInfo, reviews;
     try {
       const extracted = extractProductInfo(html);
@@ -280,18 +263,10 @@ export async function POST(request: Request) {
       reviews = extracted.reviews;
       console.log('Product information and reviews extracted');
     } catch (error) {
-      console.error('Error extracting product info:', error);
-      return new NextResponse(
-        JSON.stringify({ 
-          error: `Failed to extract product information: ${error instanceof Error ? error.message : 'Unknown error'}` 
-        }),
-        { 
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      return errorResponse(`Failed to extract product information: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
 
+    // Extract logo and site name
     let logoUrl, siteName;
     try {
       logoUrl = await extractSiteLogo(html, body.url);
@@ -302,6 +277,7 @@ export async function POST(request: Request) {
       siteName = new URL(body.url).hostname;
     }
 
+    // Generate OpenAI content
     console.log('Generating content with OpenAI...');
     try {
       const [generalPitchResponse, specificPitchResponse, feedbackResponse] = await Promise.all([
@@ -499,41 +475,28 @@ export async function POST(request: Request) {
           }),
           { 
             status: 200,
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-store, must-revalidate'
+            }
           }
         );
       } catch (error) {
         console.error('Error processing quiz data:', error);
-        return new NextResponse(
-          JSON.stringify({ error: 'Failed to process quiz data' }),
-          { 
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-          }
-        );
+        return errorResponse('Failed to process quiz data', 500);
       }
     } catch (error) {
       console.error('Error generating OpenAI content:', error);
-      return new NextResponse(
-        JSON.stringify({ 
-          error: `Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}` 
-        }),
-        { 
-          status: 500,
-          headers: { 'Content-Type': 'application/json' }
-        }
+      return errorResponse(
+        `Failed to generate content: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500
       );
     }
   } catch (error: unknown) {
     console.error('Error processing request:', error);
-    return new NextResponse(
-      JSON.stringify({ 
-        error: `Failed to process request: ${error instanceof Error ? error.message : 'Unknown error'}` 
-      }),
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+    return errorResponse(
+      `Failed to process request: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      500
     );
   }
 }

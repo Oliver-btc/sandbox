@@ -17,55 +17,69 @@ export default function URLAnalyzer() {
   const [usePlaceholders, setUsePlaceholders] = useState(true);
   const router = useRouter();
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-  
+
+const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  setIsLoading(true);
+  setError(null);
+
+  try {
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        url,
+        usePlaceholders
+      }),
+    });
+
+    // Log the raw response for debugging
+    console.log('Response status:', response.status);
+    console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+    let data;
     try {
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          url,
-          usePlaceholders
-        }),
-      });
-  
-      let data;
-      try {
-        data = await response.json();
-      } catch (error) {
-        console.error('Failed to parse response:', error);
-        throw new Error('Server returned an invalid response. Please try again.');
-      }
-  
-      if (!response.ok) {
-        throw new Error(data.error || `Server error: ${response.status}`);
-      }
-  
-      if (!data) {
-        throw new Error('Empty response received');
-      }
-  
-      // Validate the response data
-      if (!data.generalPitch || !data.specificPitch || !data.customerFeedback || !data.quiz) {
-        throw new Error('Incomplete data received from server');
-      }
-  
-      // Store the AI-generated content
-      localStorage.setItem('analysisResults', JSON.stringify(data));
-      router.push('/ai-qr');
+      const textResponse = await response.text(); // Get response as text first
+      console.log('Raw response:', textResponse);
       
-    } catch (error: unknown) {
-      console.error('Error in handleSubmit:', error);
-      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
+      try {
+        data = JSON.parse(textResponse); // Then try to parse it
+      } catch (parseError) {
+        console.error('Failed to parse response as JSON:', parseError);
+        throw new Error(`Invalid JSON response: ${textResponse.slice(0, 200)}...`);
+      }
+    } catch (error) {
+      console.error('Error reading response:', error);
+      throw new Error('Failed to read server response');
     }
-  };
+
+    if (!response.ok) {
+      throw new Error(data.error || `Server error: ${response.status}`);
+    }
+
+    if (!data) {
+      throw new Error('Empty response received');
+    }
+
+    // Validate the response data structure
+    if (!data.generalPitch || !data.specificPitch || !data.customerFeedback || !data.quiz) {
+      console.error('Invalid response structure:', data);
+      throw new Error('Incomplete data received from server');
+    }
+
+    // Store the AI-generated content
+    localStorage.setItem('analysisResults', JSON.stringify(data));
+    router.push('/ai-qr');
+    
+  } catch (error: unknown) {
+    console.error('Error in handleSubmit:', error);
+    setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#F7931A] to-black">
