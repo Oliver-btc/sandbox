@@ -36,7 +36,7 @@ const logUrlToSheet = async (url: string) => {
     const locationData = await getLocationFromIP();
     
     await fetch(
-      'https://script.google.com/macros/s/AKfycbyeOCDsFThG2kxwolKnTSG7aTRXz54D0c4SeEpnZyW0OwU4Sx-mg_rlNRLKPxOgq4g/exec',
+      'https://script.google.com/macros/s/AKfycbzbyEIbPfEMDk3uT_PdgPFGhznvzuABMcSWzmoSrAiA6bfgSKku7hXz66EJTFfCiw/exec',
       {
         method: 'POST',
         mode: 'no-cors',
