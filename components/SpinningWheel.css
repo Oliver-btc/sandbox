@@ -1,0 +1,87 @@
+.wheel-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #f0f4f7;
+  }
+  
+  .wheel {
+    width: 320px;
+    height: 320px;
+    border-radius: 50%;
+    border: 8px solid #000;
+    position: relative;
+    overflow: hidden;
+    transition: transform 4s ease-out;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    background: conic-gradient(from 0deg, #ff6347, #ffeb3b, #4caf50, #2196f3, #ff5722);
+  }
+  
+  .segment {
+    position: absolute;
+    width: 50%; /* Reset to 50% to maintain balance */
+    height: 50%; /* Reset to 50% to maintain balance */
+    top: 0;
+    left: 0;
+    transform-origin: 100% 100%; /* Center the rotation */
+    border-right: 2px solid white;
+  }
+  
+  .segment-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(40deg); /* Apply a counter-clockwise rotation to move text/icons back slightly */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .prize-icon {
+    font-size: 20px; /* Keep icon size slightly reduced */
+    margin-bottom: 3px; /* Margin for spacing between icon and text */
+  }
+  
+  .prize-label {
+    font-size: 12px;
+    text-align: center; /* Ensure proper centering of text */
+  }
+  
+  .pointer {
+    width: 0;
+    height: 0;
+    border-left: 20px solid transparent;
+    border-right: 20px solid transparent;
+    border-bottom: 30px solid red;
+    margin-bottom: 20px;
+    z-index: 10;
+  }
+  
+  button {
+    margin-top: 20px;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    background-color: #ff5722;
+    color: white;
+    border-radius: 5px;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease;
+  }
+  
+  button:hover {
+    background-color: #e64a19;
+  }
+  
+  .message {
+    margin-top: 20px;
+    font-size: 18px;
+    color: #333;
+  }
+  
