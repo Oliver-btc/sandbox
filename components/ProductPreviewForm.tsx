@@ -1,7 +1,10 @@
 import React, { useState, FormEvent } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Lightbulb, ArrowDown, AlertTriangle, CheckCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import CustomVideoModal from './CustomVideoModal';
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const ProductPreviewForm = () => {
   const [url, setUrl] = useState('');
@@ -9,6 +12,8 @@ const ProductPreviewForm = () => {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState('');
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [useAiImages, setUseAiImages] = useState(false);
+  const router = useRouter();
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUrl(e.target.value);
@@ -20,27 +25,68 @@ const ProductPreviewForm = () => {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
-    setStatus('idle');
+    setStatus('loading');
     
     if (!url.trim()) {
-      setError("Oops! Please add a product URL to continue.");
+      setError("Please add a product URL to continue.");
       setStatus('error');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      setStatus('loading');
       
-      // Simulate processing time
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Validate URL
+      try {
+        new URL(url);
+      } catch {
+        throw new Error('Please enter a valid URL');
+      }
+
+      const apiUrl = new URL('/api/analyze', window.location.origin);
       
-      // Here you would handle the URL submission and preview generation
-      console.log('Processing URL:', url);
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url,
+          usePlaceholders: !useAiImages
+        }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'An error occurred while processing your request.';
+        
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || `Server error: ${response.status}`;
+        } catch {
+          if (response.status === 429) {
+            errorMessage = 'Too many requests. Please try again in a minute.';
+          } else if (response.status === 500) {
+            errorMessage = 'Server error. Please try again later.';
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+
+      if (!data.generalPitch || !data.specificPitch || !data.customerFeedback || !data.quiz) {
+        throw new Error('Invalid response format from server');
+      }
+
+      // Store the analysis results and redirect to the AI QR page
+      localStorage.setItem('analysisResults', JSON.stringify(data));
+      router.push('/ai-qr');
+      
       setStatus('success');
-      
     } catch (err) {
-      setError('Something went wrong while generating your preview. Please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to process request. Please try again.');
       setStatus('error');
     } finally {
       setIsSubmitting(false);
@@ -98,6 +144,31 @@ const ProductPreviewForm = () => {
               className="w-full px-8 py-6 rounded-full bg-neutral-800/80 border-2 border-orange-500/20 text-white placeholder-gray-400 focus:outline-none focus:border-orange-500 transition-all duration-300 text-lg shadow-lg hover:border-orange-500/40"
             />
 
+            <div className="flex items-center justify-center space-x-4 py-2">
+              <Label 
+                htmlFor="image-source" 
+                className={`cursor-pointer transition-all duration-200 ${
+                  !useAiImages ? 'text-white font-bold' : 'text-white/70'
+                }`}
+              >
+                Use Placeholder Images
+              </Label>
+              <Switch
+                id="image-source"
+                checked={useAiImages}
+                onCheckedChange={setUseAiImages}
+                className="data-[state=checked]:bg-orange-500"
+              />
+              <Label 
+                htmlFor="image-source" 
+                className={`cursor-pointer transition-all duration-200 ${
+                  useAiImages ? 'text-white font-bold' : 'text-white/70'
+                }`}
+              >
+                Use AI-Generated Images
+              </Label>
+            </div>
+
             {/* Status message container */}
             <div className="transition-all duration-300 ease-in-out">
               <StatusMessage />
@@ -140,7 +211,7 @@ const ProductPreviewForm = () => {
       <CustomVideoModal
         isOpen={isVideoModalOpen}
         onClose={() => setIsVideoModalOpen(false)}
-        videoUrl="https://www.youtube.com/embed/YZG0jpV_j1A?enablejsapi=1&amp" // Replace with your YouTube or Vimeo embed URL
+        videoUrl="https://www.youtube.com/embed/YZG0jpV_j1A?enablejsapi=1&amp"
         title="How It Works - Demo"
       />
     </div>
