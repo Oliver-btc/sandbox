@@ -4,6 +4,9 @@ import { Card } from "@/components/ui/card";
 import { ChevronRight, Calendar, ArrowRight, ChevronDown } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// Replace this with your Google Apps Script deployment URL
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwrLWKXU2e0lWLTdNlQrNG0FLz56Ar_GwtD4aFpqwBsQj1VwkjLU3Cbx1l9xu87s5Nl/exec';
+
 interface FormData {
   name: string;
   company: string;
@@ -20,7 +23,7 @@ interface FormErrors {
   message?: string;
 }
 
-const ContactSection = () => {
+const ContactForm = () => {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     company: '',
@@ -33,6 +36,7 @@ const ContactSection = () => {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const validateField = (name: string, value: string): string => {
     switch (name) {
@@ -70,13 +74,8 @@ const ContactSection = () => {
   };
 
   const isFormValid = (): boolean => {
-    // Check if all required fields are filled
     const allFieldsFilled = Object.values(formData).every(value => value.trim() !== '');
-    
-    // Check if there are no existing errors
     const noErrors = Object.keys(errors).length === 0;
-    
-    // Check if all fields meet minimum requirements
     const allFieldsValid = Object.entries(formData).every(([key, value]) => {
       return validateField(key, value) === '';
     });
@@ -103,6 +102,7 @@ const ContactSection = () => {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setSubmitError(null);
     
     // Mark all fields as touched
     const allTouched = Object.keys(formData).reduce((acc, key) => ({
@@ -117,12 +117,15 @@ const ContactSection = () => {
     }
 
     try {
-      // Here you would typically send the data to your backend
-      console.log('Form submitted:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const response = await fetch(GOOGLE_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
       setSubmitSuccess(true);
       // Reset form
       setFormData({
@@ -136,6 +139,7 @@ const ContactSection = () => {
       setErrors({});
     } catch (error) {
       console.error('Error submitting form:', error);
+      setSubmitError('Failed to submit form. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -213,6 +217,14 @@ const ContactSection = () => {
               <Alert className="mb-4 bg-green-50 text-green-800 border-green-200">
                 <AlertDescription>
                   Thanks for reaching out! We'll get back to you soon.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {submitError && (
+              <Alert className="mb-4 bg-red-50 text-red-800 border-red-200">
+                <AlertDescription>
+                  {submitError}
                 </AlertDescription>
               </Alert>
             )}
@@ -301,4 +313,4 @@ const ContactSection = () => {
   );
 };
 
-export default ContactSection;
+export default ContactForm;

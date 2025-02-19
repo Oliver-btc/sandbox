@@ -9,6 +9,7 @@ import { UserX, BarChart2, Package, Users, PackageCheck } from 'lucide-react';
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import ContactForm from './ContactForm';
+import FAQSection from './FAQSection';
 
 
 
@@ -614,6 +615,9 @@ export function LandingPageOriginal() {
       <div ref={contactFormRef}>
         <ContactForm />
       </div>
+
+      {/* FAQ Section */}
+      <FAQSection />
       
       {/* Footer */}
       <footer className="border-t border-neutral-800 py-8">
