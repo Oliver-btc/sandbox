@@ -1,13 +1,14 @@
-import React, { useState, FormEvent, useEffect } from 'react';
+import React, { useState, FormEvent } from 'react';
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Lightbulb, ArrowDown, AlertTriangle, CheckCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import CustomVideoModal from './CustomVideoModal';
 
 const ProductPreviewForm = () => {
   const [url, setUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [error, setError] = useState('');
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setUrl(e.target.value);
@@ -47,7 +48,7 @@ const ProductPreviewForm = () => {
   };
 
   const handleDemoClick = () => {
-    setUrl('https://demo.beyondthecheckout.com/sample-product');
+    setIsVideoModalOpen(true);
   };
 
   const StatusMessage = () => {
@@ -129,12 +130,19 @@ const ProductPreviewForm = () => {
                 onClick={handleDemoClick}
                 className="text-orange-500 hover:text-orange-400 underline focus:outline-none"
               >
-                Try our demo here
+                See our demo here
               </button>
             </span>
           </div>
         </div>
       </form>
+
+      <CustomVideoModal
+        isOpen={isVideoModalOpen}
+        onClose={() => setIsVideoModalOpen(false)}
+        videoUrl="https://www.youtube.com/embed/YZG0jpV_j1A?enablejsapi=1&amp" // Replace with your YouTube or Vimeo embed URL
+        title="How It Works - Demo"
+      />
     </div>
   );
 };
