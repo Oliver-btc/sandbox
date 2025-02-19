@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import ContactForm from './ContactForm';
 import FAQSection from './FAQSection';
-
+import ProductPreviewForm from './ProductPreviewForm';
 
 
 // Header Component
@@ -443,20 +443,7 @@ export function LandingPageOriginal() {
             </Card>
             
           </div>
-          <div className="text-center mt-16 max-w-4xl mx-auto">
-            <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
-            See {' '}
-              <span className="text-orange-500"> Your Product in Action</span> – Instantly & For Free!
-            </h3>
-            <p className="text-xl text-white/90 mb-4">
-            No signup. No commitment. Just enter your product URL and instantly see how it works! </p>
-            <Button 
-              onClick={scrollToContact}
-              className="bg-orange-500 hover:bg-orange-600 text-white px-6 md:px-8 py-4 md:py-6 text-base md:text-lg rounded-full w-full md:w-auto"
-            >
-              Try It for Free with Your Product <ArrowRight className="ml-2" />
-            </Button>
-        </div>
+          <ProductPreviewForm />
         </div>
       </section>
 
