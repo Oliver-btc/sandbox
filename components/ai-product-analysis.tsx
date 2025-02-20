@@ -58,7 +58,7 @@ export function AIProductAnalysis() {
   }, [router]);
 
   const handleNext = () => {
-    router.push('/ai-quiz');
+    router.push('https://beyondtc-v1.vercel.app/ai-quiz');
   };
 
   return (

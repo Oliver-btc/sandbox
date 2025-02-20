@@ -31,7 +31,7 @@ export function BitcoinRewardPage() {
   }, []);
 
   const handleClaim = () => {
-    router.push("/ai-product-analysis");  // Updated to match your URL structure
+    router.push("https://beyondtc-v1.vercel.app/ai-product-analysis");  // Updated to match your URL structure
   };
 
   return (

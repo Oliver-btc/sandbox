@@ -1,44 +1,50 @@
-import React from 'react';
-import { Loader2, QrCode, Scan, LineChart, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Loader2, QrCode, Scan, LineChart, CheckCircle2, Sparkles } from 'lucide-react';
 
 interface LoadingPopupProps {
   isOpen: boolean;
 }
 
 const LoadingPopup: React.FC<LoadingPopupProps> = ({ isOpen }) => {
-  const [currentStep, setCurrentStep] = React.useState(0);
+  const [completedSteps, setCompletedSteps] = useState<number[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
+  
   const steps = [
     { icon: Scan, text: "Analyzing your product URL..." },
     { icon: QrCode, text: "Creating your custom QR code..." },
-    { icon: LineChart, text: "Generating analytics preview..." }
+    { icon: LineChart, text: "Generating analytics preview..." },
+    { icon: Sparkles, text: "Finalizing your personalized preview..." }
   ];
 
-  React.useEffect(() => {
-    if (isOpen) {
-      const interval = setInterval(() => {
-        setCurrentStep(prev => (prev + 1) % steps.length);
-      }, 2000);
-      return () => clearInterval(interval);
+  useEffect(() => {
+    if (!isOpen) {
+      setCompletedSteps([]);
+      setCurrentStep(0);
+      return;
     }
-  }, [isOpen]);
+
+    // Progress through steps
+    const stepInterval = 4000; // 4 seconds per step
+    
+    const progressTimer = setInterval(() => {
+      setCurrentStep(prev => {
+        if (prev < steps.length - 1) {
+          setCompletedSteps(completed => [...completed, prev]);
+          return prev + 1;
+        }
+        return prev;
+      });
+    }, stepInterval);
+
+    return () => clearInterval(progressTimer);
+  }, [isOpen, steps.length]);
 
   if (!isOpen) return null;
 
   const getStepStatus = (index: number) => {
-    if (index < currentStep) return 'completed';
+    if (completedSteps.includes(index)) return 'completed';
     if (index === currentStep) return 'current';
     return 'pending';
-  };
-
-  const getStepStyles = (status: 'completed' | 'current' | 'pending') => {
-    switch (status) {
-      case 'completed':
-        return 'text-green-400';
-      case 'current':
-        return 'text-orange-500';
-      case 'pending':
-        return 'text-gray-500';
-    }
   };
 
   return (
@@ -67,17 +73,17 @@ const LoadingPopup: React.FC<LoadingPopupProps> = ({ isOpen }) => {
             {steps.map((step, index) => {
               const StepIcon = step.icon;
               const status = getStepStatus(index);
-              const stepStyle = getStepStyles(status);
               
               return (
                 <div 
                   key={index}
-                  className={`flex items-center gap-3 transition-all duration-300 ${stepStyle}`}
+                  className={`flex items-center gap-3 transition-all duration-300 ${
+                    status === 'completed' ? 'text-green-400' :
+                    status === 'current' ? 'text-orange-500' : 'text-gray-500'
+                  }`}
                 >
                   {status === 'completed' ? (
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-green-400" />
-                    </div>
+                    <CheckCircle2 className="w-5 h-5 text-green-400" />
                   ) : (
                     <StepIcon className={`w-5 h-5 ${
                       status === 'current' ? 'animate-pulse' : ''
@@ -90,7 +96,11 @@ const LoadingPopup: React.FC<LoadingPopupProps> = ({ isOpen }) => {
                   <span className="text-sm">
                     {status === 'completed' && '✓'}
                     {status === 'current' && (
-                      <span className="inline-block animate-pulse">...</span>
+                      <span className="inline-flex gap-1">
+                        <span className="animate-bounce">.</span>
+                        <span className="animate-bounce" style={{ animationDelay: '0.2s' }}>.</span>
+                        <span className="animate-bounce" style={{ animationDelay: '0.4s' }}>.</span>
+                      </span>
                     )}
                   </span>
                 </div>
@@ -103,7 +113,7 @@ const LoadingPopup: React.FC<LoadingPopupProps> = ({ isOpen }) => {
             <div 
               className="h-full bg-orange-500 transition-all duration-300 ease-out"
               style={{ 
-                width: `${((currentStep + 1) / steps.length) * 100}%`
+                width: `${((completedSteps.length + 1) / steps.length) * 100}%`
               }}
             />
           </div>
