@@ -12,9 +12,20 @@ export function BitcoinRewardPage() {
   useEffect(() => {
     const fetchBitcoinPrice = async () => {
       try {
-        const response = await fetch("https://api.coindesk.com/v1/bpi/currentprice/USD.json");
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', {
+          headers: {
+            'accept': 'application/json',
+            // Add your API key if you have one
+            // 'x-cg-demo-api-key': process.env.NEXT_PUBLIC_COINGECKO_API_KEY || ''
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
-        const price = Math.round(data.bpi.USD.rate_float);
+        const price = Math.round(data.bitcoin.usd);
         setBitcoinPrice(price);
         
         const satsToUsd = (10000 / 100000000) * price;
@@ -25,13 +36,13 @@ export function BitcoinRewardPage() {
     };
 
     fetchBitcoinPrice();
-    const intervalId = setInterval(fetchBitcoinPrice, 60000);
+    const intervalId = setInterval(fetchBitcoinPrice, 60000); // Fetch every minute
 
     return () => clearInterval(intervalId);
   }, []);
 
   const handleClaim = () => {
-    router.push("https://beyondtc-v1.vercel.app/ai-product-analysis");  // Updated to match your URL structure
+    router.push("https://beyondtc-v1.vercel.app/ai-product-analysis");
   };
 
   return (

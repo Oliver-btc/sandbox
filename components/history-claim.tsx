@@ -209,20 +209,31 @@ export function HistoryClaim() {
     async function fetchBitcoinPrice() {
       try {
         const response = await fetch(
-          "https://api.coindesk.com/v1/bpi/currentprice/BTC.json"
+          'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
+          {
+            headers: {
+              'accept': 'application/json',
+              // Add your API key if you have one
+              // 'x-cg-demo-api-key': process.env.NEXT_PUBLIC_COINGECKO_API_KEY || ''
+            }
+          }
         );
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const data = await response.json();
-        const price = parseFloat(data.bpi.USD.rate.replace(',', ''));
+        const price = data.bitcoin.usd;
         setBitcoinPrice(price);
         setSatsPerDollar(Math.round(100000000 / price));
       } catch (error) {
         console.error("Error fetching Bitcoin price:", error);
       }
     }
-
+  
     fetchBitcoinPrice();
-
-    const intervalId = setInterval(fetchBitcoinPrice, 60000);
+    const intervalId = setInterval(fetchBitcoinPrice, 60000); // Fetch every minute
     return () => clearInterval(intervalId);
   }, []);
 
