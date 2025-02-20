@@ -32,11 +32,8 @@ export function AIQRCode() {
     router.push("https://beyondtc-v1.vercel.app/ai-reward");
   };
 
-  const handleContactClick = () => {
-    const contactSection = document.getElementById('contact-section');
-    if (contactSection) {
-      contactSection.scrollIntoView({ behavior: 'smooth' });
-    }
+  const handleBooking = (calendlyUrl: string) => {
+    window.open(calendlyUrl, '_blank');
   };
 
   return (
@@ -55,12 +52,12 @@ export function AIQRCode() {
       </header>
 
       {/* Main content */}
-      <main className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8 text-white pt-24">
+      <main className="flex-grow flex items-center justify-center px-4 sm:px-6 lg:px-8 text-white pt-20">
         <Card className="w-full max-w-[90vw] md:max-w-2xl bg-black/20 border-2 border-[#F7931A]">
           <CardContent className="p-4 md:p-8">
             <div className="flex flex-col items-center space-y-4">
               {/* Main Headline */}
-              <div className="text-center space-y-2">
+              <div className="text-center space-y-2 -mb-2">
                 <h1 className="text-3xl md:text-4xl font-bold text-white">
                   🎉 Here's Your Personalized Product Preview!
                 </h1>
@@ -73,7 +70,7 @@ export function AIQRCode() {
               </div>
 
               <div className="animate-bounce">
-                <ArrowDown className="w-6 h-6 text-[#F7931A] mx-auto" />
+                <ArrowDown className="w-6 h-6 text-[#F7931A] mx-auto -mb-2" />
               </div>
 
               {/* QR Code Section */}
@@ -109,15 +106,16 @@ export function AIQRCode() {
                 </h3>
                 <div className="space-y-3 text-center">
                   <p className="text-gray-200">🎁 Claim instant Bitcoin rewards</p>
-                  <p className="text-gray-200">🏆 Unlock exclusive engagement</p>
-                  <p className="text-gray-200">⚡ Boost loyalty with every scan</p>
+                  <p className="text-gray-200">📘 Discover your product </p>
+                  <p className="text-gray-200">📝 Provide valuable feedback </p>
                 </div>
               </div>
 
               {/* Call to Action */}
-              <p className="text-[#F7931A] font-medium text-center mt-4">
-                See it in action—scan the code or use the demo link!
+              <p className="text-[#F7931A] text-sm text-center mt-2">
+                Scan the code or use the demo link <br/> to see how your customers engage with your product.
               </p>
+
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md mt-4">
@@ -149,12 +147,13 @@ export function AIQRCode() {
 
               {/* Contact CTA */}
               <button
-                onClick={handleContactClick}
+                onClick={() => handleBooking('https://calendly.com/oliver-checkout/30min?back=1')}
                 className="text-[#F7931A] hover:text-[#e68b15] flex items-center gap-2 text-sm transition-colors mt-4"
               >
                 <MessageSquare className="h-4 w-4" />
                 Want this on your product? Let's chat!
               </button>
+
             </div>
           </CardContent>
         </Card>

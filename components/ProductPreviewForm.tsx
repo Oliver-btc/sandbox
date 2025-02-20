@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import CustomVideoModal from './CustomVideoModal';
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import LoadingPopup from './LoadingPopup';  // ADD THIS LINE
 
 const ProductPreviewForm = () => {
   const [url, setUrl] = useState('');
@@ -205,6 +206,8 @@ const ProductPreviewForm = () => {
               </button>
             </span>
           </div>
+
+          <LoadingPopup isOpen={status === 'loading'} />  {/* ADD THIS LINE */}
         </div>
       </form>
 
