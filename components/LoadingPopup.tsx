@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, QrCode, Scan, LineChart } from 'lucide-react';
+import { Loader2, QrCode, Scan, LineChart, CheckCircle2 } from 'lucide-react';
 
 interface LoadingPopupProps {
   isOpen: boolean;
@@ -23,6 +23,23 @@ const LoadingPopup: React.FC<LoadingPopupProps> = ({ isOpen }) => {
   }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const getStepStatus = (index: number) => {
+    if (index < currentStep) return 'completed';
+    if (index === currentStep) return 'current';
+    return 'pending';
+  };
+
+  const getStepStyles = (status: 'completed' | 'current' | 'pending') => {
+    switch (status) {
+      case 'completed':
+        return 'text-green-400';
+      case 'current':
+        return 'text-orange-500';
+      case 'pending':
+        return 'text-gray-500';
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
@@ -49,24 +66,46 @@ const LoadingPopup: React.FC<LoadingPopupProps> = ({ isOpen }) => {
           <div className="space-y-4">
             {steps.map((step, index) => {
               const StepIcon = step.icon;
+              const status = getStepStatus(index);
+              const stepStyle = getStepStyles(status);
+              
               return (
                 <div 
                   key={index}
-                  className={`flex items-center gap-3 transition-all duration-300 ${
-                    index === currentStep ? 'text-orange-500' : 'text-gray-500'
-                  }`}
+                  className={`flex items-center gap-3 transition-all duration-300 ${stepStyle}`}
                 >
-                  <StepIcon className={`w-5 h-5 ${
-                    index === currentStep ? 'animate-pulse' : ''
-                  }`} />
-                  <span className={`${
-                    index === currentStep ? 'text-white' : 'text-gray-500'
-                  }`}>
-                    {step.text}
+                  {status === 'completed' ? (
+                    <div className="flex items-center gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-green-400" />
+                    </div>
+                  ) : (
+                    <StepIcon className={`w-5 h-5 ${
+                      status === 'current' ? 'animate-pulse' : ''
+                    }`} />
+                  )}
+                  
+                  <span className="flex-1">{step.text}</span>
+                  
+                  {/* Status indicator */}
+                  <span className="text-sm">
+                    {status === 'completed' && '✓'}
+                    {status === 'current' && (
+                      <span className="inline-block animate-pulse">...</span>
+                    )}
                   </span>
                 </div>
               );
             })}
+          </div>
+          
+          {/* Progress bar */}
+          <div className="mt-6 bg-gray-800 rounded-full h-1.5 overflow-hidden">
+            <div 
+              className="h-full bg-orange-500 transition-all duration-300 ease-out"
+              style={{ 
+                width: `${((currentStep + 1) / steps.length) * 100}%`
+              }}
+            />
           </div>
         </div>
       </div>
