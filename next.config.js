@@ -3,15 +3,16 @@ const nextConfig = {
   experimental: {
     serverActions: true
   },
-  async redirects() {
-    return [
-      {
-        source: '/bitcoin-reward',
-        destination: '/ai-product-analysis',
-        permanent: false,
-      },
-    ];
-  },
+  // Comment out the redirects for now
+  // async redirects() {
+  //   return [
+  //     {
+  //       source: '/ai-reward',
+  //       destination: '/ai-product-analysis',
+  //       permanent: false,
+  //     },
+  //   ];
+  // },
 };
 
 module.exports = nextConfig;

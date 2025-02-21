@@ -22,6 +22,22 @@ interface AnalysisResult {
   };
 }
 
+const defaultAnalysisResult: AnalysisResult = {
+  generalPitch: {
+    description: "Welcome! You're about to explore an exciting product.",
+    imageUrl: "/images/Bitcoin Logo.png"
+  },
+  specificPitch: {
+    description: "This product has been specifically designed for your needs.",
+    imageUrl: "/images/Bitcoin Logo.png"
+  },
+  customerFeedback: {
+    testimonial: "An amazing product that exceeded my expectations!",
+    imageUrl: "/images/Bitcoin Logo.png",
+    customerName: "Happy Customer"
+  }
+};
+
 export function AIProductAnalysis() {
   const router = useRouter();
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -48,17 +64,20 @@ export function AIProductAnalysis() {
           }
         });
       } else {
-        // If no results found, redirect back to the URL analyzer
-        router.push('/');
+        // Instead of redirecting, use default data
+        setResult(defaultAnalysisResult);
       }
     } catch (err) {
       setError('Failed to load analysis results');
       console.error('Error loading analysis results:', err);
     }
-  }, [router]);
+  }, []); // Removed router from dependencies
 
   const handleNext = () => {
-    router.push('https://beyondtc-v1.vercel.app/ai-quiz');
+    const basePath = process.env.NODE_ENV === 'development' 
+      ? '' 
+      : 'https://beyondtc-v1.vercel.app';
+    router.push(`${basePath}/ai-quiz`);
   };
 
   return (
@@ -91,64 +110,64 @@ export function AIProductAnalysis() {
                 <TabsTrigger value="feedback" className="text-white">Reviews</TabsTrigger>
               </TabsList>
 
-            <TabsContent value="general">
-              <Card className="bg-black/20 border-2 border-[#F7931A]">
-                <CardContent className="p-6">
-                  <div className="flex flex-col items-center space-y-4">
-                    <img
-                      src={result.generalPitch.imageUrl}
-                      alt="General Product"
-                      className="w-64 h-64 rounded-lg object-cover"
-                    />
-                    <p className="text-lg text-center text-white">
-                      {result.generalPitch.description}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="specific">
-              <Card className="bg-black/20 border-2 border-[#F7931A]">
-                <CardContent className="p-6">
-                  <div className="flex flex-col items-center space-y-4">
-                    <img
-                      src={result.specificPitch.imageUrl}
-                      alt="Specific Use Case"
-                      className="w-64 h-64 rounded-lg object-cover"
-                    />
-                    <p className="text-lg text-center text-white">
-                      {result.specificPitch.description}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="feedback">
-              <Card className="bg-black/20 border-2 border-[#F7931A]">
-                <CardContent className="p-6">
-                  <div className="flex flex-col items-center space-y-4">
-                    <img
-                      src={result.customerFeedback.imageUrl}
-                      alt="Happy Customer"
-                      className="w-64 h-64 rounded-lg object-cover"
-                    />
-                    <div className="text-center">
-                      <p className="text-lg text-white italic mb-2">
-                      &quot;{result.customerFeedback.testimonial}&quot;
+              <TabsContent value="general">
+                <Card className="bg-black/20 border-2 border-[#F7931A]">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col items-center space-y-4">
+                      <img
+                        src={result.generalPitch.imageUrl}
+                        alt="General Product"
+                        className="w-64 h-64 rounded-lg object-cover"
+                      />
+                      <p className="text-lg text-center text-white">
+                        {result.generalPitch.description}
                       </p>
-                      {result.customerFeedback.customerName && (
-                        <p className="text-sm text-gray-300">
-                          - {result.customerFeedback.customerName}
-                        </p>
-                      )}
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="specific">
+                <Card className="bg-black/20 border-2 border-[#F7931A]">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col items-center space-y-4">
+                      <img
+                        src={result.specificPitch.imageUrl}
+                        alt="Specific Use Case"
+                        className="w-64 h-64 rounded-lg object-cover"
+                      />
+                      <p className="text-lg text-center text-white">
+                        {result.specificPitch.description}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="feedback">
+                <Card className="bg-black/20 border-2 border-[#F7931A]">
+                  <CardContent className="p-6">
+                    <div className="flex flex-col items-center space-y-4">
+                      <img
+                        src={result.customerFeedback.imageUrl}
+                        alt="Happy Customer"
+                        className="w-64 h-64 rounded-lg object-cover"
+                      />
+                      <div className="text-center">
+                        <p className="text-lg text-white italic mb-2">
+                          &quot;{result.customerFeedback.testimonial}&quot;
+                        </p>
+                        {result.customerFeedback.customerName && (
+                          <p className="text-sm text-gray-300">
+                            - {result.customerFeedback.customerName}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           )}
           
           {result && (

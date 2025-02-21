@@ -1,5 +1,5 @@
-import { BitcoinRewardPage } from '@/components/ai-bitcoin-reward-page';
+import { BitcoinRewardPage } from "@/components/ai-bitcoin-reward-page";
 
-export default function RewardPage() {
+export default function AiRewardPage() {
   return <BitcoinRewardPage />;
 }
