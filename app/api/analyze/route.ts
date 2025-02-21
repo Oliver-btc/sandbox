@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { put } from '@vercel/blob';
+import { nanoid } from 'nanoid';
 
 // Basic configuration
 export const runtime = 'edge';
@@ -502,7 +503,7 @@ export async function POST(request: NextRequest) {
       const customerName = customerFeedback.match(/- ([^"]+)$/)?.[1] || "Happy Customer";
       const testimonial = customerFeedback.replace(/- [^"]+$/, '').trim();
 
-      // Handle images using the new function
+      // Handle images
       const images = await handleImageGeneration(
         productInfo,
         generalPitch,
@@ -519,29 +520,11 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: "system",
-            content: `You are a witty quiz creator who generates fun and engaging multiple choice questions. 
-            Your wrong answers should be:
-            1. Obviously incorrect but related to the product
-            2. Humorous and entertaining
-            3. Written in a playful tone
-            4. Not offensive or inappropriate
-            
-            Format the response as JSON:
-            {
-              "question": "What is the main value proposition of this product?",
-              "correctAnswer": "actual value proposition",
-              "wrongAnswer1": "funny but obviously wrong answer 1",
-              "wrongAnswer2": "funny but obviously wrong answer 2"
-            }`
+            content: `You are a witty quiz creator who generates fun and engaging multiple choice questions.`
           },
           {
             role: "user",
-            content: `Create a quiz with:
-            1. A clear question about the main value proposition
-            2. The correct answer that accurately states the key benefit
-            3. Two humorous but obviously incorrect answers that are related to the product's purpose
-            
-            Product info: ${productInfo}`
+            content: `Create a quiz question about: ${productInfo}`
           }
         ],
         temperature: 0.8,
@@ -567,7 +550,8 @@ export async function POST(request: NextRequest) {
 
       const correctAnswerIndex = options.indexOf(quizData.correctAnswer);
 
-      return NextResponse.json({
+      // Create the analysis data object
+      const analysisData = {
         generalPitch: {
           description: generalPitch,
           imageUrl: images.general.data[0].url
@@ -587,7 +571,24 @@ export async function POST(request: NextRequest) {
           correctAnswer: correctAnswerIndex,
           logoUrl,
           siteName
-        }
+        },
+        timestamp: Date.now()
+      };
+
+      // Generate a unique session ID
+      const sessionId = nanoid();
+
+      // Store in Blob
+      await put(`sessions/${sessionId}.json`, JSON.stringify(analysisData), {
+        access: 'public',
+        addRandomSuffix: false,
+        token: process.env.BLOB_READ_WRITE_TOKEN
+      });
+
+      // Return the data along with the session ID
+      return NextResponse.json({
+        ...analysisData,
+        sessionId
       }, {
         status: 200,
         headers: {
@@ -599,7 +600,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error('Error generating content:', error);
       return errorResponse(
-        error instanceof OpenAI.APIError ? error.message : 'Failed to generate content',
+        error instanceof Error ? error.message : 'Failed to generate content',
         error instanceof OpenAI.APIError ? error.status || 500 : 500
       );
     }
