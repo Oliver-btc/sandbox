@@ -12,6 +12,9 @@ import ContactForm from './ContactForm';
 import FAQSection from './FAQSection';
 import ProductPreviewForm from './ProductPreviewForm';
 
+import { testBlobConnection } from '@/utils/blobSharedState';
+import { toast } from '@/components/ui/use-toast';
+
 
 // Header Component
 const Header = () => {
@@ -81,6 +84,39 @@ export function LandingPageOriginal() {
               >
                 Get Started <ArrowRight className="ml-2" />
               </Button>
+              
+              
+              {/* Test Function  */}
+              <Button
+              onClick={async () => {
+                try {
+                  const isWorking = await testBlobConnection();
+                  if (isWorking) {
+                    toast({
+                      title: "Success!",
+                      description: "Blob storage is working correctly.",
+                      variant: "default",
+                    });
+                  } else {
+                    toast({
+                      title: "Error",
+                      description: "Failed to connect to Blob storage.",
+                      variant: "destructive",
+                    });
+                  }
+                } catch (error) {
+                  toast({
+                    title: "Error",
+                    description: "An error occurred while testing Blob storage.",
+                    variant: "destructive",
+                  });
+                  console.error('Test error:', error);
+                }
+              }}
+              className="bg-blue-500 hover:bg-blue-600 text-white"
+            >
+              Test Blob Connection
+            </Button>
             </div>
           </div>
         </div>
