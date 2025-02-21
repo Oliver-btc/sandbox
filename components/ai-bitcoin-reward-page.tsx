@@ -8,6 +8,7 @@ export function BitcoinRewardPage() {
   const router = useRouter();
   const [bitcoinPrice, setBitcoinPrice] = useState<number | null>(null);
   const [usdEquivalent, setUsdEquivalent] = useState<string>("0.00");
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     const fetchBitcoinPrice = async () => {
@@ -15,8 +16,6 @@ export function BitcoinRewardPage() {
         const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd', {
           headers: {
             'accept': 'application/json',
-            // Add your API key if you have one
-            // 'x-cg-demo-api-key': process.env.NEXT_PUBLIC_COINGECKO_API_KEY || ''
           }
         });
         
@@ -36,13 +35,25 @@ export function BitcoinRewardPage() {
     };
 
     fetchBitcoinPrice();
-    const intervalId = setInterval(fetchBitcoinPrice, 60000); // Fetch every minute
+    const intervalId = setInterval(fetchBitcoinPrice, 60000);
 
     return () => clearInterval(intervalId);
   }, []);
 
-  const handleClaim = () => {
-    router.push("https://beyondtc-v1.vercel.app/ai-product-analysis");
+  const handleClaim = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (isNavigating) return;
+    
+    setIsNavigating(true);
+    
+    try {
+      // Use window.location for more reliable navigation on mobile
+      window.location.href = "https://beyondtc-v1.vercel.app/ai-product-analysis";
+    } catch (error) {
+      console.error("Navigation error:", error);
+      setIsNavigating(false);
+    }
   };
 
   return (
@@ -102,9 +113,10 @@ export function BitcoinRewardPage() {
           <div className="flex items-center justify-center mt-8">
             <Button
               onClick={handleClaim}
-              className="rounded-md bg-[#F7931A] px-6 py-3 text-lg text-white shadow-sm transition-colors hover:bg-[#E8B749] focus:outline-none focus:ring-2 focus:ring-[#F7931A] focus:ring-offset-2"
+              disabled={isNavigating}
+              className="rounded-md bg-[#F7931A] px-6 py-3 text-lg text-white shadow-sm transition-colors hover:bg-[#E8B749] focus:outline-none focus:ring-2 focus:ring-[#F7931A] focus:ring-offset-2 disabled:opacity-50"
             >
-              Claim Bitcoin
+              {isNavigating ? 'Redirecting...' : 'Claim Bitcoin'}
             </Button>
           </div>
         </div>
