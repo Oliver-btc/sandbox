@@ -89,33 +89,36 @@ export function LandingPageOriginal() {
               {/* Test Function  */}
               <Button
               onClick={async () => {
-                try {
-                  const isWorking = await testBlobConnection();
-                  if (isWorking) {
-                    toast({
-                      title: "Success!",
-                      description: "Blob storage is working correctly.",
-                      variant: "default",
-                    });
-                  } else {
+                  try {
+                    const response = await fetch('/api/test-blob');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                      toast({
+                        title: "Success!",
+                        description: "Blob storage is working correctly.",
+                        variant: "default",
+                      });
+                      console.log('Test data:', data.testData);
+                    } else {
+                      toast({
+                        title: "Error",
+                        description: data.message || "Failed to connect to Blob storage.",
+                        variant: "destructive",
+                      });
+                    }
+                  } catch (error) {
                     toast({
                       title: "Error",
-                      description: "Failed to connect to Blob storage.",
+                      description: "An error occurred while testing Blob storage.",
                       variant: "destructive",
                     });
+                    console.error('Test error:', error);
                   }
-                } catch (error) {
-                  toast({
-                    title: "Error",
-                    description: "An error occurred while testing Blob storage.",
-                    variant: "destructive",
-                  });
-                  console.error('Test error:', error);
-                }
-              }}
-              className="bg-blue-500 hover:bg-blue-600 text-white"
-            >
-              Test Blob Connection
+                }}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                Test Blob Connection
             </Button>
             </div>
           </div>
