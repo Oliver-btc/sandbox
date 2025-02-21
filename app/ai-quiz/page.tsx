@@ -1,5 +1,12 @@
-import { AIQuiz } from '@/components/ai-quiz';
+"use client";
 
-export default function QuizPage() {
-  return <AIQuiz />;
+import { Suspense } from 'react';
+import { AIQuiz } from "@/components/ai-quiz";
+
+export default function AIQuizPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <AIQuiz />
+    </Suspense>
+  );
 }

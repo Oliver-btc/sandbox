@@ -104,16 +104,15 @@ export function AIProductAnalysis() {
   }, [searchParams]);
 
   const handleNext = () => {
-    const basePath = process.env.NODE_ENV === 'development' 
-      ? '' 
-      : 'https://beyondtc-v1.vercel.app';
-    
-    // Preserve the session ID when navigating
+    // Get session ID from URL params
     const sessionId = searchParams?.get('session');
+    
+    // Create the path with or without session parameter
     const nextUrl = sessionId 
-      ? `${basePath}/ai-quiz?session=${sessionId}`
-      : `${basePath}/ai-quiz`;
-      
+      ? `/ai-quiz?session=${sessionId}`
+      : '/ai-quiz';
+    
+    console.log('Navigating to:', nextUrl); // For debugging
     router.push(nextUrl);
   };
 
