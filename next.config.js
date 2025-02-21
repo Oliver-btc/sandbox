@@ -1,9 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // Remove distDir setting temporarily
-    experimental: {
-      serverActions: true
-    }
-  };
-  
-  module.exports = nextConfig;
+  experimental: {
+    serverActions: true
+  },
+  async redirects() {
+    return [
+      {
+        source: '/bitcoin-reward',
+        destination: '/ai-product-analysis',
+        permanent: false,
+      },
+    ];
+  },
+};
+
+module.exports = nextConfig;

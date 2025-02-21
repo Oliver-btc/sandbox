@@ -9,6 +9,7 @@ export function BitcoinRewardPage() {
   const [bitcoinPrice, setBitcoinPrice] = useState<number | null>(null);
   const [usdEquivalent, setUsdEquivalent] = useState<string>("0.00");
   const [isNavigating, setIsNavigating] = useState(false);
+  const [navigationError, setNavigationError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchBitcoinPrice = async () => {
@@ -40,19 +41,54 @@ export function BitcoinRewardPage() {
     return () => clearInterval(intervalId);
   }, []);
 
+  const navigateWithFallback = async () => {
+    const targetUrl = "https://beyondtc-v1.vercel.app/ai-product-analysis";
+    
+    try {
+      // Try Next.js router first
+      await router.push(targetUrl);
+    } catch (error) {
+      console.log("Next.js router failed, trying window.location");
+      try {
+        // Try window.location.href as fallback
+        window.location.href = targetUrl;
+      } catch (error) {
+        console.log("window.location failed, trying window.open");
+        try {
+          // Try window.open as second fallback
+          const newWindow = window.open(targetUrl, '_self');
+          if (!newWindow) {
+            throw new Error("Failed to open window");
+          }
+        } catch (error) {
+          console.log("All navigation methods failed");
+          // Create a clickable link as last resort
+          const link = document.createElement('a');
+          link.href = targetUrl;
+          link.click();
+        }
+      }
+    }
+  };
+
   const handleClaim = async (e: React.MouseEvent) => {
     e.preventDefault();
     
     if (isNavigating) return;
     
     setIsNavigating(true);
+    setNavigationError(null);
     
     try {
-      // Use window.location for more reliable navigation on mobile
-      window.location.href = "https://beyondtc-v1.vercel.app/ai-product-analysis";
+      await navigateWithFallback();
     } catch (error) {
       console.error("Navigation error:", error);
-      setIsNavigating(false);
+      setNavigationError("Navigation failed. Please try again or click here to continue: ");
+    } finally {
+      // Reset navigation state after a delay
+      setTimeout(() => {
+        setIsNavigating(false);
+      }, 2000);
     }
   };
 
@@ -110,7 +146,7 @@ export function BitcoinRewardPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-center mt-8">
+          <div className="flex flex-col items-center justify-center mt-8 space-y-4">
             <Button
               onClick={handleClaim}
               disabled={isNavigating}
@@ -118,6 +154,18 @@ export function BitcoinRewardPage() {
             >
               {isNavigating ? 'Redirecting...' : 'Claim Bitcoin'}
             </Button>
+            
+            {navigationError && (
+              <div className="text-sm text-red-400">
+                {navigationError}
+                <a 
+                  href="https://beyondtc-v1.vercel.app/ai-product-analysis"
+                  className="text-[#F7931A] underline ml-1"
+                >
+                  Click here
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </main>
