@@ -520,22 +520,46 @@ export async function POST(request: NextRequest) {
         messages: [
           {
             role: "system",
-            content: `You are a witty quiz creator who generates fun and engaging multiple choice questions.`
+            content: `You are a witty quiz creator who generates fun and engaging multiple choice questions. 
+            Your response must be in this exact JSON format:
+            {
+              "question": "The actual question text here",
+              "correctAnswer": "The correct answer here",
+              "wrongAnswer1": "First wrong but funny answer",
+              "wrongAnswer2": "Second wrong but funny answer"
+            }`
           },
           {
             role: "user",
-            content: `Create a quiz question about: ${productInfo}`
+            content: `Create a quiz question about this product: ${productInfo}`
           }
         ],
         temperature: 0.8,
         max_tokens: 500
       });
-
-      if (!quizCompletion.choices[0]?.message?.content) {
-        throw new Error('Failed to generate quiz content');
+      
+      let quizData;
+      try {
+        if (!quizCompletion.choices[0]?.message?.content) {
+          throw new Error('No quiz content generated');
+        }
+        
+        quizData = JSON.parse(quizCompletion.choices[0].message.content.trim());
+        
+        if (!quizData.question || !quizData.correctAnswer || !quizData.wrongAnswer1 || !quizData.wrongAnswer2) {
+          throw new Error('Invalid quiz data format');
+        }
+      } catch (error) {
+        console.error('Error parsing quiz data:', error);
+        // Provide fallback quiz data
+        quizData = {
+          question: "What makes this product special?",
+          correctAnswer: "Its unique features and quality",
+          wrongAnswer1: "It can make you fly",
+          wrongAnswer2: "It grants wishes"
+        };
       }
-
-      const quizData = JSON.parse(quizCompletion.choices[0].message.content);
+      
       const options = [
         quizData.correctAnswer,
         quizData.wrongAnswer1,
@@ -547,7 +571,7 @@ export async function POST(request: NextRequest) {
         const j = Math.floor(Math.random() * (i + 1));
         [options[i], options[j]] = [options[j], options[i]];
       }
-
+      
       const correctAnswerIndex = options.indexOf(quizData.correctAnswer);
 
       // Create the analysis data object
@@ -578,12 +602,22 @@ export async function POST(request: NextRequest) {
       // Generate a unique session ID
       const sessionId = nanoid();
 
+      console.log('Analysis data being stored:', {
+        ...analysisData,
+        type: 'analysis_data',
+        timestamp: new Date().toISOString()
+      });
+      
+      console.log('Attempting to store in Blob with session ID:', sessionId);
+
       // Store in Blob
       await put(`sessions/${sessionId}.json`, JSON.stringify(analysisData), {
         access: 'public',
         addRandomSuffix: false,
         token: process.env.BLOB_READ_WRITE_TOKEN
       });
+
+      console.log('Successfully stored in Blob. Preparing response...');
 
       // Return the data along with the session ID
       return NextResponse.json({
