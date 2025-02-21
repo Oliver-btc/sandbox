@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export function BitcoinRewardPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [bitcoinPrice, setBitcoinPrice] = useState<number | null>(null);
   const [usdEquivalent, setUsdEquivalent] = useState<string>("0.00");
   const [isNavigating, setIsNavigating] = useState(false);
@@ -42,24 +43,28 @@ export function BitcoinRewardPage() {
 
   const handleClaim = (e: React.MouseEvent) => {
     e.preventDefault();
-    console.log('Claim button clicked');
     
     if (isNavigating) {
-      console.log('Already navigating, returning');
       return;
     }
     
     setIsNavigating(true);
-    console.log('Starting navigation');
-  
+    
     try {
+      // Get session ID from URL parameters
+      const sessionId = searchParams?.get('session');
+      
       // Use the relative path for local development
       const basePath = process.env.NODE_ENV === 'development' 
         ? '' 
         : 'https://beyondtc-v1.vercel.app';
-      const targetUrl = `${basePath}/ai-product-analysis`;
       
-      console.log(`Navigating to: ${targetUrl}`);
+      // Add session ID to the target URL if available
+      const targetUrl = sessionId
+        ? `${basePath}/ai-product-analysis?session=${sessionId}`
+        : `${basePath}/ai-product-analysis`;
+      
+      console.log('Navigating to:', targetUrl);
       window.location.assign(targetUrl);
     } catch (error) {
       console.error('Navigation error:', error);

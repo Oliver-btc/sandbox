@@ -13,6 +13,23 @@ export function AIQRCode() {
   const router = useRouter();
   const [qrSize, setQrSize] = useState(200);
   const qrContainerRef = useRef<HTMLDivElement>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Get the stored analysis results including sessionId
+    const storedResults = localStorage.getItem('analysisResults');
+    if (storedResults) {
+      try {
+        const results = JSON.parse(storedResults);
+        if (results.sessionId) {
+          setSessionId(results.sessionId);
+          console.log('Session ID found:', results.sessionId);
+        }
+      } catch (error) {
+        console.error('Error parsing stored results:', error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const updateQRSize = () => {
@@ -24,9 +41,13 @@ export function AIQRCode() {
 
     updateQRSize();
     window.addEventListener('resize', updateQRSize);
-
     return () => window.removeEventListener('resize', updateQRSize);
   }, []);
+
+  // Construct QR code URL with session ID
+  const qrCodeUrl = sessionId 
+    ? `${rewardPageUrl}?session=${sessionId}`
+    : rewardPageUrl;
 
   const handleClaim = () => {
     router.push("https://beyondtc-v1.vercel.app/ai-reward");
@@ -90,7 +111,7 @@ export function AIQRCode() {
                     className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[45%] h-[45%] bg-white flex items-center justify-center"
                   >
                     <QRCodeSVG 
-                      value={rewardPageUrl}
+                      value={qrCodeUrl}
                       size={qrSize}
                       level="H"
                       includeMargin={false}
@@ -116,12 +137,11 @@ export function AIQRCode() {
                 Scan the code or use the demo link <br/> to see how your customers engage with your product.
               </p>
 
-
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md mt-4">
                 <Button
                   onClick={() => {
-                    navigator.clipboard.writeText(rewardPageUrl);
+                    navigator.clipboard.writeText(qrCodeUrl);
                     toast({
                       title: "Link Copied! 🎉",
                       description: "Share this demo link to showcase your future product experience",

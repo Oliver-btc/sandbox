@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useRouter } from 'next/navigation';
+import { toast } from '@/components/ui/use-toast';
 
 interface AnalysisResult {
   generalPitch: {
@@ -40,45 +42,90 @@ const defaultAnalysisResult: AnalysisResult = {
 
 export function AIProductAnalysis() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const storedResults = localStorage.getItem('analysisResults');
-      if (storedResults) {
-        const parsedResults = JSON.parse(storedResults);
-        setResult({
-          generalPitch: {
-            description: parsedResults.generalPitch.description,
-            imageUrl: parsedResults.generalPitch.imageUrl
-          },
-          specificPitch: {
-            description: parsedResults.specificPitch.description,
-            imageUrl: parsedResults.specificPitch.imageUrl
-          },
-          customerFeedback: {
-            testimonial: parsedResults.customerFeedback.testimonial,
-            imageUrl: parsedResults.customerFeedback.imageUrl,
-            customerName: parsedResults.customerFeedback.customerName
+    const loadResults = async () => {
+      try {
+        setIsLoading(true);
+        const sessionId = searchParams?.get('session');
+
+        if (sessionId) {
+          console.log('Fetching data for session:', sessionId);
+          // Construct the URL for the stored session
+          const blobUrl = `${process.env.NEXT_PUBLIC_BLOB_BASE_URL}/sessions/${sessionId}.json`;
+          
+          try {
+            const response = await fetch(blobUrl);
+            if (response.ok) {
+              const data = await response.json();
+              console.log('Successfully fetched session data');
+              setResult({
+                generalPitch: data.generalPitch,
+                specificPitch: data.specificPitch,
+                customerFeedback: data.customerFeedback
+              });
+              return;
+            } else {
+              console.error('Failed to fetch session data:', response.status);
+            }
+          } catch (error) {
+            console.error('Error fetching from Blob:', error);
           }
-        });
-      } else {
-        // Instead of redirecting, use default data
+        }
+
+        // If no session ID or Blob fetch failed, try localStorage
+        const storedResults = localStorage.getItem('analysisResults');
+        if (storedResults) {
+          const parsedResults = JSON.parse(storedResults);
+          setResult({
+            generalPitch: parsedResults.generalPitch,
+            specificPitch: parsedResults.specificPitch,
+            customerFeedback: parsedResults.customerFeedback
+          });
+          return;
+        }
+
+        // If all else fails, use default data
         setResult(defaultAnalysisResult);
+      } catch (err) {
+        console.error('Error loading analysis results:', err);
+        setError('Failed to load analysis results');
+        setResult(defaultAnalysisResult);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      setError('Failed to load analysis results');
-      console.error('Error loading analysis results:', err);
-    }
-  }, []); // Removed router from dependencies
+    };
+
+    loadResults();
+  }, [searchParams]);
 
   const handleNext = () => {
     const basePath = process.env.NODE_ENV === 'development' 
       ? '' 
       : 'https://beyondtc-v1.vercel.app';
-    router.push(`${basePath}/ai-quiz`);
+    
+    // Preserve the session ID when navigating
+    const sessionId = searchParams?.get('session');
+    const nextUrl = sessionId 
+      ? `${basePath}/ai-quiz?session=${sessionId}`
+      : `${basePath}/ai-quiz`;
+      
+    router.push(nextUrl);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#F7931A] to-black">
+        <div className="flex-grow flex items-center justify-center">
+          <div className="text-white text-xl">Loading analysis results...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-[#F7931A] to-black">
@@ -98,10 +145,6 @@ export function AIProductAnalysis() {
             <div className="text-center text-red-500 mt-4">
               {error}
             </div>
-          ) : !result ? (
-            <div className="text-center mt-4">
-              Loading analysis results...
-            </div>
           ) : (
             <Tabs defaultValue="general" className="w-full">
               <TabsList className="grid grid-cols-3 bg-black/20 rounded-lg p-1">
@@ -115,12 +158,12 @@ export function AIProductAnalysis() {
                   <CardContent className="p-6">
                     <div className="flex flex-col items-center space-y-4">
                       <img
-                        src={result.generalPitch.imageUrl}
+                        src={result?.generalPitch.imageUrl}
                         alt="General Product"
                         className="w-64 h-64 rounded-lg object-cover"
                       />
                       <p className="text-lg text-center text-white">
-                        {result.generalPitch.description}
+                        {result?.generalPitch.description}
                       </p>
                     </div>
                   </CardContent>
@@ -132,12 +175,12 @@ export function AIProductAnalysis() {
                   <CardContent className="p-6">
                     <div className="flex flex-col items-center space-y-4">
                       <img
-                        src={result.specificPitch.imageUrl}
+                        src={result?.specificPitch.imageUrl}
                         alt="Specific Use Case"
                         className="w-64 h-64 rounded-lg object-cover"
                       />
                       <p className="text-lg text-center text-white">
-                        {result.specificPitch.description}
+                        {result?.specificPitch.description}
                       </p>
                     </div>
                   </CardContent>
@@ -149,15 +192,15 @@ export function AIProductAnalysis() {
                   <CardContent className="p-6">
                     <div className="flex flex-col items-center space-y-4">
                       <img
-                        src={result.customerFeedback.imageUrl}
-                        alt="Happy Customer"
+                        src={result?.customerFeedback.imageUrl}
+                        alt="Customer Feedback"
                         className="w-64 h-64 rounded-lg object-cover"
                       />
                       <div className="text-center">
                         <p className="text-lg text-white italic mb-2">
-                          &quot;{result.customerFeedback.testimonial}&quot;
+                          "{result?.customerFeedback.testimonial}"
                         </p>
-                        {result.customerFeedback.customerName && (
+                        {result?.customerFeedback.customerName && (
                           <p className="text-sm text-gray-300">
                             - {result.customerFeedback.customerName}
                           </p>
@@ -170,16 +213,14 @@ export function AIProductAnalysis() {
             </Tabs>
           )}
           
-          {result && (
-            <div className="mt-6 flex justify-center">
-              <Button
-                onClick={handleNext}
-                className="px-6 py-3 rounded-lg bg-[#F7931A] text-black hover:bg-[#e68b15] font-semibold"
-              >
-                Next
-              </Button>
-            </div>
-          )}
+          <div className="mt-6 flex justify-center">
+            <Button
+              onClick={handleNext}
+              className="px-6 py-3 rounded-lg bg-[#F7931A] text-black hover:bg-[#e68b15] font-semibold"
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </main>
 
