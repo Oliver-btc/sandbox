@@ -1,5 +1,7 @@
-import { AIQRCode } from '@/components/ai-qr-code';
+"use client";
 
-export default function QRPage() {
+import { AIQRCode } from "@/components/ai-qr-code";
+
+export default function AIQRPage() {
   return <AIQRCode />;
 }

@@ -1,5 +1,7 @@
-import { AIProductAnalysis } from '@/components/ai-product-analysis';
+"use client";
 
-export default function ProductAnalysisPage() {
+import { AIProductAnalysis } from "@/components/ai-product-analysis";
+
+export default function AIProductAnalysisPage() {
   return <AIProductAnalysis />;
 }
