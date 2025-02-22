@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useRouter } from 'next/navigation';
 import { toast } from '@/components/ui/use-toast';
+import { Footer } from "@/components/Footer"; 
 
 interface AnalysisResult {
   generalPitch: {
@@ -23,6 +24,10 @@ interface AnalysisResult {
     customerName?: string;
   };
 }
+
+const handleBooking = (calendlyUrl: string) => {
+  window.open(calendlyUrl, '_blank');
+};
 
 const defaultAnalysisResult: AnalysisResult = {
   generalPitch: {
@@ -224,17 +229,7 @@ export function AIProductAnalysis() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-6 pb-4 text-center">
-        <p className="text-gray-400 text-sm">Powered by</p>
-        <img
-          src="/images/BeyondTC.png"
-          alt="Beyond The Checkout"
-          width="100"
-          height="50"
-          className="mx-auto"
-          style={{ aspectRatio: "2.34 / 1", objectFit: "cover" }}
-        />
-      </footer>
+      <Footer onBooking={handleBooking} />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useRouter, useSearchParams } from "next/navigation";
-import { MessageSquare } from 'lucide-react';
+import { Footer } from "@/components/Footer"; 
 
 export function BitcoinRewardPage() {
   const router = useRouter();
@@ -144,25 +144,7 @@ export function BitcoinRewardPage() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-6 pb-4">
-        <div className="flex flex-col items-center justify-center gap-4">
-        <img
-            src="/images/BeyondTC.png"
-            alt="Beyond The Checkout"
-            width="100"
-            height="50"
-            style={{ aspectRatio: "2.34 / 1", objectFit: "cover" }}
-          />
-          <button
-            onClick={() => handleBooking('https://calendly.com/oliver-checkout/30min?back=1')}
-            className="text-white hover:text-[#e68b15] flex items-center gap-2 text-sm transition-colors"
-          >
-            <MessageSquare className="h-4 w-4" />
-            Ready to add rewards to your product? <span className="underline">Let's chat!</span>
-          </button>
-
-        </div>
-      </footer>
+      <Footer onBooking={handleBooking} />
     </div>
   );
 }

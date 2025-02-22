@@ -15,6 +15,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Switch } from "@/components/ui/switch";
 import HeaderCustomer from './HeaderCustomer'; // Import the new HeaderCustomer component
+import { Footer } from "@/components/Footer"; 
 
 // Define types for our components
 type DialogProps = {
@@ -50,6 +51,10 @@ type CardType = {
   rewardLocation: string;
   shopUrl: string;
   homepageUrl: string;
+};
+
+const handleBooking = (calendlyUrl: string) => {
+  window.open(calendlyUrl, '_blank');
 };
 
 // Simple Dialog component
@@ -745,16 +750,7 @@ const cards: CardType[] = [
             />
           )}
 
-          <div className="flex flex-col items-center mt-4 mb-4">
-            <p className="text-gray-400 text-sm">Powered by</p>
-            <img
-              src="/images/BeyondTC.png"
-              alt="Beyond The Checkout"
-              width="100"
-              height="50"
-              style={{ aspectRatio: "2.34 / 1", objectFit: "cover" }}
-            />
-          </div>
+<Footer onBooking={handleBooking} />
         </div>
       </div>
     </Suspense>

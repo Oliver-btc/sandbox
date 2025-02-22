@@ -12,8 +12,12 @@ import MarketplaceCard from './MarketplaceCard'; // Import the new MarketplaceCa
 import CategoryFilter from './CategoryFilter';
 import { Switch } from "@/components/ui/switch";
 import HeaderCustomer from './HeaderCustomer';
-
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { Footer } from "@/components/Footer"; 
+
+const handleBooking = (calendlyUrl: string) => {
+  window.open(calendlyUrl, '_blank');
+};
 
 
 export function BtcEcosystem() {
@@ -226,16 +230,7 @@ export function BtcEcosystem() {
         </div>
       </div>
 
-      <div className="flex flex-col items-center mt-8 mb-4">
-        <p className="text-gray-400 text-sm">Powered by</p>
-        <img
-          src="/images/BeyondTC.png"
-          alt="Beyond The Checkout"
-          width="100"
-          height="50"
-          style={{ aspectRatio: "2.34 / 1", objectFit: "cover" }}
-        />
-      </div>
+      <Footer onBooking={handleBooking} />
     </div>
   );
 }
