@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { toast } from '@/components/ui/use-toast';
 import { useRouter } from "next/navigation";
 
+
 export function AIQRCode() {
   const rewardPageUrl = process.env.NEXT_PUBLIC_REWARD_PAGE_URL || 'https://beyondtc-v1.vercel.app/ai-reward';
   const router = useRouter();
@@ -171,7 +172,7 @@ export function AIQRCode() {
                 className="text-[#F7931A] hover:text-[#e68b15] flex items-center gap-2 text-sm transition-colors mt-4"
               >
                 <MessageSquare className="h-4 w-4" />
-                Want this on your product? Let's chat!
+                Ready to add rewards to your product? Let’s chat!
               </button>
 
             </div>
