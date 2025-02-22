@@ -85,41 +85,6 @@ export function LandingPageOriginal() {
                 Get Started <ArrowRight className="ml-2" />
               </Button>
               
-              
-              {/* Test Function  */}
-              <Button
-              onClick={async () => {
-                  try {
-                    const response = await fetch('/api/test-blob');
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                      toast({
-                        title: "Success!",
-                        description: "Blob storage is working correctly.",
-                        variant: "default",
-                      });
-                      console.log('Test data:', data.testData);
-                    } else {
-                      toast({
-                        title: "Error",
-                        description: data.message || "Failed to connect to Blob storage.",
-                        variant: "destructive",
-                      });
-                    }
-                  } catch (error) {
-                    toast({
-                      title: "Error",
-                      description: "An error occurred while testing Blob storage.",
-                      variant: "destructive",
-                    });
-                    console.error('Test error:', error);
-                  }
-                }}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                Test Blob Connection
-            </Button>
             </div>
           </div>
         </div>
@@ -149,7 +114,6 @@ export function LandingPageOriginal() {
                     alt="Product Option A"
                     className="h-48 md:h-64 w-auto object-contain relative z-10"
                   />
-
                 </div>
                 
                 {/* Content Section */}

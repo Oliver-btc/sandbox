@@ -12,7 +12,7 @@ const LoadingPopup: React.FC<LoadingPopupProps> = ({ isOpen }) => {
   const steps = [
     { icon: Scan, text: "Analyzing your product URL..." },
     { icon: QrCode, text: "Creating your custom QR code..." },
-    { icon: LineChart, text: "Generating analytics preview..." },
+    { icon: LineChart, text: "Generating product promo & education..." },
     { icon: Sparkles, text: "Finalizing your personalized preview..." }
   ];
 
@@ -24,7 +24,7 @@ const LoadingPopup: React.FC<LoadingPopupProps> = ({ isOpen }) => {
     }
 
     // Progress through steps
-    const stepInterval = 4000; // 4 seconds per step
+    const stepInterval = 4500; // 4.5 seconds per step
     
     const progressTimer = setInterval(() => {
       setCurrentStep(prev => {

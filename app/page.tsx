@@ -1,8 +1,7 @@
-import { QRLandingPage } from "@/components/qrlanding-page";
-import Image from "next/image";
+"use client";
+
+import { LandingPageOriginal } from "@/components/landing-page-original";
 
 export default function Home() {
-  return <> 
-  <QRLandingPage/>
-  </>;
+  return <LandingPageOriginal />;
 }
